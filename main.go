@@ -2,8 +2,6 @@ package migrate
 
 import (
 	"encoding/json"
-	"fmt"
-	"runtime"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -48,7 +46,4 @@ func Append(migration Migration) {
 	if err := cmd.Append(dtoMigration); err != nil {
 		panic(err)
 	}
-
-	_, filename, _, _ := runtime.Caller(1)
-	fmt.Printf("%+v\n", filename)
 }
