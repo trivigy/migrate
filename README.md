@@ -1,302 +1,226 @@
-# sql-migrate
+# Migrate
 
-> SQL Schema migration tool for [Go](http://golang.org/). Based on [gorp](https://github.com/go-gorp/gorp) and [goose](https://bitbucket.org/liamstask/goose).
+[![CircleCI branch](https://img.shields.io/circleci/project/github/trivigy/migrate/master.svg?label=master&logo=circleci)](https://circleci.com/gh/trivigy/workflows/migrate)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
+[![](https://godoc.org/github.com/trivigy/migrate?status.svg&style=flat)](http://godoc.org/github.com/trivigy/migrate)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/trivigy/migrate.svg?style=flat&color=e36397&label=release)](https://github.com/trivigy/migrate/releases/latest)
 
-[![Build Status](https://travis-ci.org/rubenv/sql-migrate.svg?branch=master)](https://travis-ci.org/rubenv/sql-migrate) [![GoDoc](https://godoc.org/github.com/rubenv/sql-migrate?status.png)](https://godoc.org/github.com/rubenv/sql-migrate)
-
-Using [modl](https://github.com/jmoiron/modl)? Check out [modl-migrate](https://github.com/rubenv/modl-migrate).
+The library was originally forked from [sql-migrate](https://github.com/rubenv/sql-migrate) 
+which is a really great project. However I needed a tool that is somewhat more 
+golang idiomatic in nature. So I completely re-wrote the API for the forked 
+library and optimized on a whole lot of stuff inside. I am using this project to 
+back a few other major developments I am working on and will keep updating things 
+as needed. If you do find bugs please feel free to submit a pull request.
 
 ## Features
-
-* Usable as a CLI tool or as a library
-* Supports SQLite, PostgreSQL, MySQL, MSSQL and Oracle databases (through [gorp](https://github.com/go-gorp/gorp))
-* Can embed migrations into your application
+* Usable as an embedded CLI tool
+* Supports SQLite, PostgreSQL, MySQL, MSSQL (through [gorp](https://github.com/go-gorp/gorp))
 * Migrations are defined with SQL for full flexibility
-* Atomic migrations
-* Up/down migrations to allow rollback
+* Transaction based migrations with ability to run transactionless
+* Migration rollback support through `up` and `down` commands
 * Supports multiple database types in one project
-* Works great with other libraries such as [sqlx](http://jmoiron.github.io/sqlx/)
 
 ## Installation
-
-To install the library and command line program, use the following:
-
+To embed the application, use the following from within your project directory:
 ```bash
-go get -v github.com/rubenv/sql-migrate/...
+go get -u github.com/trivigy/migrate
 ```
 
 ## Usage
+The way the library works is purely through embedding it in another project as 
+a runnable `cmd`. You can then create multiple of these for different databases 
+that your project supports.
 
-### As a standalone tool
-
+For example here is a possible project structure where this tool would be embedded:
 ```
-$ sql-migrate --help
-usage: sql-migrate [--version] [--help] <command> [<args>]
-
-Available commands are:
-    down      Undo a database migration
-    new       Create a new migration
-    redo      Reapply the last migration
-    status    Show migration status
-    up        Migrates the database to the most recent version available
-```
-
-Each command requires a configuration file (which defaults to `dbconfig.yml`, but can be specified with the `-config` flag). This config file should specify one or more environments:
-
-```yml
-development:
-    dialect: sqlite3
-    datasource: test.db
-    dir: migrations/sqlite3
-
-production:
-    dialect: postgres
-    datasource: dbname=myapp sslmode=disable
-    dir: migrations/postgres
-    table: migrations
+$ tree ./project
+./project
+.
+├── cmd
+│   └── migrate
+│       └── main.go
+├── go.mod
+├── go.sum
+├── internal
+│   └── migrations
+│       ├── 0.0.1_create-users-table.go
+│       ├── 0.0.2_create-emails-table.go
+│       └── 0.0.3_create-zipcodes-table.go
+├── README.md
+└── main.go
 ```
 
-The `table` setting is optional and will default to `gorp_migrations`.
+In this case your main project is inside of `main.go` located at the tree root. 
+You will then follow by creating the `./cmd/migrate` folder and adding a `main.go` 
+file there. Here is an example of what should be added to that file.
 
-The environment that will be used can be specified with the `-env` flag (defaults to `development`).
+> There is absolutely no requirement to call the embedded application `migrate`.
+In fact if you are using multiple migration setups, you will have to create a 
+few of these and call them differently.
+
+> Skip down here if you just want to see how to write migrations [HERE]()
+
+### `./cmd/migrate/main.go`
+```
+package main
+
+import (
+	"os"
+
+	"github.com/trivigy/migrate"
+
+	_ "github.com/username/project/internal/migrations"
+)
+
+func init() {
+	migrate.SetConfigs(map[string]migrate.DatabaseConfig{
+		"development": {
+			Driver: "postgres",
+			Source: "host=127.0.0.1 user=postgres dbname=database sslmode=disable",
+		},
+	})
+}
+
+func main() {
+	if err := migrate.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+```
+
+> Most important part here is to add the `main()` function with that exact call 
+to `migrate.Execute()`. Once you do that, you can run the embedded command to 
+help you do the rest.
+
+As you can see, the configuration for the tool are done programmically through 
+`migrate.SetConfigs()`. The key of the passed map acts as the environment name. 
+You later reference it when calling different commands. The environment names 
+can be anything you want. In this case I chose to call it `development`.
+
+Currently `SQLite`, `PostgreSQL`, `MySQL`, `MSSQL` drivers are supported and the 
+values of `driver` and `source` are passed varbatum down to `sql.Open(driver, source)`. 
+Thus the format for `source` is depended on the type of the database.
+
+Use `--help` to learn about what commands you can run:
+```
+$ go run ./cmd/migrate --help
+Idiomatic GO database migration tool
+
+Usage:
+  main [command]
+
+Available Commands:
+  create      Create a newly versioned migration template file
+  down        Undo the last applied database migration
+  status      Show migration status for the current database
+  up          Migrates the database to the most recent version
+
+Flags:
+  -v, --version   Print version information and quit.
+      --help      Show help information.
+
+Use "main [command] --help" for more information about a command.
+```
 
 Use the `--help` flag in combination with any of the commands to get an overview of its usage:
-
 ```
-$ sql-migrate up --help
-Usage: sql-migrate up [options] ...
+$ go run ./cmd/migrate up --help
+Migrates the database to the most recent version
 
-  Migrates the database to the most recent version available.
+Usage:
+  main up [flags]
 
-Options:
-
-  -config=dbconfig.yml   Configuration file to use.
-  -env="development"     Environment.
-  -limit=0               Limit the number of migrations (0 = unlimited).
-  -dryrun                Don't apply migrations, just print them.
-```
-
-The `new` command creates a new empty migration template using the following pattern `<current time>-<name>.sql`.
-
-The `up` command applies all available migrations. By contrast, `down` will only apply one migration by default. This behavior can be changed for both by using the `-limit` parameter.
-
-The `redo` command will unapply the last migration and reapply it. This is useful during development, when you're writing migrations.
-
-Use the `status` command to see the state of the applied migrations:
-
-```bash
-$ sql-migrate status
-+---------------+-----------------------------------------+
-|   MIGRATION   |                 APPLIED                 |
-+---------------+-----------------------------------------+
-| 1_initial.sql | 2014-09-13 08:19:06.788354925 +0000 UTC |
-| 2_record.sql  | no                                      |
-+---------------+-----------------------------------------+
+Flags:
+      --dry-run      Simulate a migration printing planned queries.
+  -n, --num NUMBER   Indicate NUMBER of migrations to apply.
+  -e, --env ENV      Run with configurations named ENV. (required)
+      --help         Show help information.
 ```
 
-### MySQL Caveat
+## MySQL Caveat
 
-If you are using MySQL, you must append `?parseTime=true` to the `datasource` configuration. For example:
-
-```yml
-production:
-    dialect: mysql
-    datasource: root@/dbname?parseTime=true
-    dir: migrations/mysql
-    table: migrations
+If you are using MySQL, you must append `?parseTime=true` to the source DSN 
+configuration. See [here](https://github.com/go-sql-driver/mysql#parsetime) for 
+more information. For example:
+### alternative `./cmd/migrate/main.go`
 ```
+package main
 
-See [here](https://github.com/go-sql-driver/mysql#parsetime) for more information.
+import (
+	"os"
 
-### As a library
+	"github.com/trivigy/migrate"
 
-Import sql-migrate into your application:
+	_ "github.com/username/project/internal/migrations"
+)
 
-```go
-import "github.com/rubenv/sql-migrate"
-```
-
-Set up a source of migrations, this can be from memory, from a set of files or from bindata (more on that later):
-
-```go
-// Hardcoded strings in memory:
-migrations := &migrate.MemoryMigrationSource{
-    Migrations: []*migrate.Migration{
-        &migrate.Migration{
-            Id:   "123",
-            Up:   []string{"CREATE TABLE people (id int)"},
-            Down: []string{"DROP TABLE people"},
-        },
-    },
+func init() {
+	migrate.SetConfigs(map[string]migrate.DatabaseConfig{
+		"testing": {
+			Driver: "mysql",
+			Source: "root@/dbname?parseTime=true",
+		},
+	})
 }
 
-// OR: Read migrations from a folder:
-migrations := &migrate.FileMigrationSource{
-    Dir: "db/migrations",
+func main() {
+	if err := migrate.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
 
-// OR: Use migrations from a packr box
-migrations := &migrate.PackrMigrationSource{
-    Box: packr.NewBox("./migrations"),
-}
-
-// OR: Use migrations from bindata:
-migrations := &migrate.AssetMigrationSource{
-    Asset:    Asset,
-    AssetDir: AssetDir,
-    Dir:      "migrations",
-}
 ```
 
-Then use the `Exec` function to upgrade your database:
+## Writing Migrations
+Migrations are embedded into the command by referencing them with 
+`import _ "github.com/username/project/internal/migrations"`. You might have 
+noticed this from the `./cmd/migrate/main.go` examples above. I am chosing to 
+place the migration files inside `./internal/migrations` but in face you may 
+chose to place them elsewhere.
 
-```go
-db, err := sql.Open("sqlite3", filename)
-if err != nil {
-    // Handle errors!
-}
+To help you create migration files quicker, there is the `create` command. What 
+is special about it is that it will auto-increment the migration version tags 
+which need to be unique.
+```
+$ go run ./cmd/migrate create --help
+Create a newly versioned migration template file
 
-n, err := migrate.Exec(db, "sqlite3", migrations, migrate.Up)
-if err != nil {
-    // Handle errors!
-}
-fmt.Printf("Applied %d migrations!\n", n)
+Usage:
+  main create NAME[:TAG] [flags]
+
+Flags:
+  -d, --dir PATH   Specify directory PATH to create miration file. (default ".")
+      --help       Show help information.
 ```
 
-Note that `n` can be greater than `0` even if there is an error: any migration that succeeded will remain applied even if a later one fails.
+The tags follow an almost complete semver model. You can use `major`, `minor`, 
+`patch`, and `build` parts of the semantic versioning scheme to tag your 
+migrations. The migrations get sorted based on this semantic tagging scheme. For 
+more detail on the precedence order read [semver](https://semver.org/).
 
-Check [the GoDoc reference](https://godoc.org/github.com/rubenv/sql-migrate) for the full documentation.
-
-## Writing migrations
-Migrations are defined in SQL files, which contain a set of SQL statements. Special comments are used to distinguish up and down migrations.
-
-```sql
--- +migrate Up
--- SQL in section 'Up' is executed when this migration is applied
-CREATE TABLE people (id int);
-
-
--- +migrate Down
--- SQL section 'Down' is executed when this migration is rolled back
-DROP TABLE people;
+An example migration file might look like this:
 ```
+$ cat ./internal/migrations/0.0.4_create-zipcodes-table.go 
+package migrations
 
-You can put multiple statements in each block, as long as you end them with a semicolon (`;`).
+import (
+        "github.com/trivigy/migrate"
+)
 
-You can alternatively set up a separator string that matches an entire line by setting `sqlparse.LineSeparator`. This
-can be used to imitate, for example, MS SQL Query Analyzer functionality where commands can be separated by a line with
-contents of `GO`. If `sqlparse.LineSeparator` is matched, it will not be included in the resulting migration scripts.
-
-If you have complex statements which contain semicolons, use `StatementBegin` and `StatementEnd` to indicate boundaries:
-
-```sql
--- +migrate Up
-CREATE TABLE people (id int);
-
--- +migrate StatementBegin
-CREATE OR REPLACE FUNCTION do_something()
-returns void AS $$
-DECLARE
-  create_query text;
-BEGIN
-  -- Do something here
-END;
-$$
-language plpgsql;
--- +migrate StatementEnd
-
--- +migrate Down
-DROP FUNCTION do_something();
-DROP TABLE people;
-```
-
-The order in which migrations are applied is defined through the filename: sql-migrate will sort migrations based on their name. It's recommended to use an increasing version number or a timestamp as the first part of the filename.
-
-Normally each migration is run within a transaction in order to guarantee that it is fully atomic. However some SQL commands (for example creating an index concurrently in PostgreSQL) cannot be executed inside a transaction. In order to execute such a command in a migration, the migration can be run using the `notransaction` option:
-
-```sql
--- +migrate Up notransaction
-CREATE UNIQUE INDEX people_unique_id_idx CONCURRENTLY ON people (id);
-
--- +migrate Down
-DROP INDEX people_unique_id_idx;
-```
-
-## Embedding migrations with [packr](https://github.com/gobuffalo/packr)
-
-If you like your Go applications self-contained (that is: a single binary): use [packr](https://github.com/gobuffalo/packr) to embed the migration files.
-
-Just write your migration files as usual, as a set of SQL files in a folder.
-
-Use the `PackrMigrationSource` in your application to find the migrations:
-
-```go
-migrations := &migrate.PackrMigrationSource{
-    Box: packr.NewBox("./migrations"),
+func init() {
+        migrate.Append(migrate.Migration{
+                Tag: "0.0.4",
+                Up: []migrate.Operation{
+                        {Query: `CREATE TABLE zipcodes (id int)`},
+                },
+                Down: []migrate.Operation{
+                        {Query: `DROP TABLE zipcodes`},
+                },
+        })
 }
 ```
-
-If you already have a box and would like to use a subdirectory:
-
-```go
-migrations := &migrate.PackrMigrationSource{
-    Box: myBox,
-    Dir: "./migrations",
-}
-```
-
-## Embedding migrations with [bindata](https://github.com/shuLhan/go-bindata)
-
-As an alternative, but slightly less maintained, you can use [bindata](https://github.com/shuLhan/go-bindata) to embed the migration files.
-
-Just write your migration files as usual, as a set of SQL files in a folder.
-
-Then use bindata to generate a `.go` file with the migrations embedded:
-
-```bash
-go-bindata -pkg myapp -o bindata.go db/migrations/
-```
-
-The resulting `bindata.go` file will contain your migrations. Remember to regenerate your `bindata.go` file whenever you add/modify a migration (`go generate` will help here, once it arrives).
-
-Use the `AssetMigrationSource` in your application to find the migrations:
-
-```go
-migrations := &migrate.AssetMigrationSource{
-    Asset:    Asset,
-    AssetDir: AssetDir,
-    Dir:      "db/migrations",
-}
-```
-
-Both `Asset` and `AssetDir` are functions provided by bindata.
-
-Then proceed as usual.
-
-## Extending
-
-Adding a new migration source means implementing `MigrationSource`.
-
-```go
-type MigrationSource interface {
-    FindMigrations() ([]*Migration, error)
-}
-```
-
-The resulting slice of migrations will be executed in the given order, so it should usually be sorted by the `Id` field.
-
-## Usage with [sqlx](http://jmoiron.github.io/sqlx/)
-
-This library is compatible with sqlx. When calling migrate just dereference the DB from your `*sqlx.DB`:
-
-```
-n, err := migrate.Exec(db.DB, "sqlite3", migrations, migrate.Up)
-                    //   ^^^ <-- Here db is a *sqlx.DB, the db.DB field is the plain sql.DB
-if err != nil {
-    // Handle errors!
-}
-```
-
-## License
-
-This library is distributed under the [MIT](LICENSE) license.
+The filename for the migration files **DO NOT** follow a strict naming convention 
+of `{tag}_{filename}.go`. The actual filename is there just to help the developer 
+communicate file purpose. However, when using the `create` command filenames are 
+generated with that name.
