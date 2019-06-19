@@ -35,7 +35,7 @@ func (r *UpCommandSuite) SetupTest() {
 }
 
 func (r *UpCommandSuite) TearDownTest() {
-	ReInitialize()
+	Restart()
 	err := db.Close()
 	assert.Nil(r.T(), err)
 }
@@ -58,7 +58,7 @@ func (r *UpCommandSuite) TestSingleMigrationAppliedWithDryRun() {
 	// @formatter:off
 	expected :=
 		"==> migration \"0.0.1\" (up)\n" +
-		"CREATE TABLE unittest (value text);\n"
+			"CREATE TABLE unittest (value text);\n"
 	// @formatter:on
 	assert.Equal(r.T(), expected, output)
 
@@ -136,7 +136,7 @@ func (r *UpCommandSuite) TestMultipleMigrationApplied() {
 	// @formatter:off
 	expected :=
 		"migration \"0.0.1\" successfully applied (up)\n" +
-		"migration \"0.0.2\" successfully applied (up)\n"
+			"migration \"0.0.2\" successfully applied (up)\n"
 	// @formatter:on
 	assert.Equal(r.T(), expected, output)
 

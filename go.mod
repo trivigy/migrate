@@ -7,6 +7,7 @@ require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/lib/pq v1.1.1
+	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0
 	github.com/olekukonko/tablewriter v0.0.1
 	github.com/pkg/errors v0.8.1

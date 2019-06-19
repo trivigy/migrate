@@ -2,6 +2,8 @@ package store
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
@@ -38,7 +40,6 @@ type Context struct {
 
 // Open initializes the context and creates a database connection.
 func Open(driver, source string) (*Context, error) {
-	dialect := supportedDialects[driver]
 	db, err := sql.Open(driver, source)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -47,6 +48,13 @@ func Open(driver, source string) (*Context, error) {
 	if err = db.Ping(); err != nil {
 		return nil, errors.WithStack(err)
 	}
+
+	return OpenWithDB(db)
+}
+
+// OpenWithDB initializes the context with the provided database connection.
+func OpenWithDB(db *sql.DB) (*Context, error) {
+	dialect := supportedDialects[getDriverName(db.Driver())]
 
 	// When using the mysql driver, make sure that the parseTime option is
 	// configured, otherwise it won't map time columns to time.Time. See
@@ -75,4 +83,19 @@ func (r *Context) GetDBMap() *gorp.DbMap {
 // Close terminates the connection to the database and closes context.
 func (r *Context) Close() error {
 	return r.db.Close()
+}
+
+func getDriverName(driver driver.Driver) string {
+	sqlDriverNamesByType := map[reflect.Type]string{}
+	for _, driverName := range sql.Drivers() {
+		if db, _ := sql.Open(driverName, ""); db != nil {
+			driverType := reflect.TypeOf(db.Driver())
+			sqlDriverNamesByType[driverType] = driverName
+		}
+	}
+	driverType := reflect.TypeOf(driver)
+	if driverName, found := sqlDriverNamesByType[driverType]; found {
+		return driverName
+	}
+	return ""
 }
