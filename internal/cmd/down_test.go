@@ -35,7 +35,7 @@ func (r *DownCommandSuite) SetupTest() {
 }
 
 func (r *DownCommandSuite) TearDownTest() {
-	ReInitialize()
+	Restart()
 	err := db.Close()
 	assert.Nil(r.T(), err)
 }
@@ -62,7 +62,7 @@ func (r *DownCommandSuite) TestSingleMigrationRemovedWithDryRun() {
 	// @formatter:off
 	expected :=
 		"==> migration \"0.0.1\" (down)\n" +
-		"DROP TABLE unittests;\n"
+			"DROP TABLE unittests;\n"
 	// @formatter:on
 	assert.Equal(r.T(), expected, output)
 
@@ -146,7 +146,7 @@ func (r *UpCommandSuite) TestMultipleMigrationRemoved() {
 	// @formatter:off
 	expectedApplied :=
 		"migration \"0.0.1\" successfully applied (up)\n" +
-		"migration \"0.0.2\" successfully applied (up)\n"
+			"migration \"0.0.2\" successfully applied (up)\n"
 	// @formatter:on
 	assert.Equal(r.T(), expectedApplied, output)
 
@@ -155,7 +155,7 @@ func (r *UpCommandSuite) TestMultipleMigrationRemoved() {
 	// @formatter:off
 	expectedRemoved :=
 		"migration \"0.0.2\" successfully removed (down)\n" +
-		"migration \"0.0.1\" successfully removed (down)\n"
+			"migration \"0.0.1\" successfully removed (down)\n"
 	// @formatter:on
 	assert.Equal(r.T(), expectedRemoved, output)
 
@@ -191,7 +191,7 @@ func (r *UpCommandSuite) TestMultipleMigrationDeletedWithSingleStep() {
 	// @formatter:off
 	expectedApplied :=
 		"migration \"0.0.1\" successfully applied (up)\n" +
-		"migration \"0.0.2\" successfully applied (up)\n"
+			"migration \"0.0.2\" successfully applied (up)\n"
 	// @formatter:on
 	assert.Equal(r.T(), expectedApplied, output)
 

@@ -38,7 +38,7 @@ func (r *StatusCommandSuite) SetupTest() {
 }
 
 func (r *StatusCommandSuite) TearDownTest() {
-	ReInitialize()
+	Restart()
 	err := db.Close()
 	assert.Nil(r.T(), err)
 }
@@ -58,10 +58,10 @@ func (r *StatusCommandSuite) TestSinglePendingMigration() {
 	// @formatter:off
 	expected :=
 		"+-------+---------+\n" +
-		"|  TAG  | APPLIED |\n" +
-		"+-------+---------+\n" +
-		"| 0.0.1 | pending |\n" +
-		"+-------+---------+\n"
+			"|  TAG  | APPLIED |\n" +
+			"+-------+---------+\n" +
+			"| 0.0.1 | pending |\n" +
+			"+-------+---------+\n"
 	// @formatter:on
 
 	output, err := executeCommand(&root.Command, "status", "--env", "testing")
@@ -95,11 +95,11 @@ func (r *StatusCommandSuite) TestMultiplePendingMigration() {
 	// @formatter:off
 	expected :=
 		"+-------+---------+\n" +
-		"|  TAG  | APPLIED |\n" +
-		"+-------+---------+\n" +
-		"| 0.0.1 | pending |\n" +
-		"| 0.0.2 | pending |\n" +
-		"+-------+---------+\n"
+			"|  TAG  | APPLIED |\n" +
+			"+-------+---------+\n" +
+			"| 0.0.1 | pending |\n" +
+			"| 0.0.2 | pending |\n" +
+			"+-------+---------+\n"
 	// @formatter:on
 
 	output, err := executeCommand(&root.Command, "status", "--env", "testing")
