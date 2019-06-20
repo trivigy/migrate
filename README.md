@@ -73,7 +73,7 @@ import (
 )
 
 func init() {
-	migrate.SetConfigs(map[string]migrate.DatabaseConfig{
+	migrate.SetConfigs(map[string]migrate.DataSource{
 		"development": {
 			Driver: "postgres",
 			Source: "host=127.0.0.1 user=postgres dbname=database sslmode=disable",
@@ -156,7 +156,7 @@ import (
 )
 
 func init() {
-	migrate.SetConfigs(map[string]migrate.DatabaseConfig{
+	migrate.SetConfigs(map[string]migrate.DataSource{
 		"testing": {
 			Driver: "mysql",
 			Source: "root@/dbname?parseTime=true",
