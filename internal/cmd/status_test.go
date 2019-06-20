@@ -3,16 +3,13 @@ package cmd
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/blang/semver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/yaml.v2"
 
-	"github.com/trivigy/migrate/internal/dao"
 	"github.com/trivigy/migrate/internal/dto"
-	"github.com/trivigy/migrate/internal/store"
 )
 
 type StatusCommandSuite struct {
@@ -27,20 +24,12 @@ func (r *StatusCommandSuite) SetupTest() {
 		},
 	})
 	assert.Nil(r.T(), err)
-
-	err = SetConfigs(rbytes)
-	assert.Nil(r.T(), err)
-
-	db, err = store.Open("sqlite3", ":memory:")
-	assert.Nil(r.T(), err)
-	err = db.Migrations.CreateTableIfNotExists()
-	assert.Nil(r.T(), err)
+	assert.Nil(r.T(), SetConfigs(rbytes))
 }
 
 func (r *StatusCommandSuite) TearDownTest() {
-	Restart()
-	err := db.Close()
-	assert.Nil(r.T(), err)
+	_ = Clear()
+	assert.Nil(r.T(), Close())
 }
 
 func (r *StatusCommandSuite) TestSinglePendingMigration() {
@@ -64,7 +53,7 @@ func (r *StatusCommandSuite) TestSinglePendingMigration() {
 			"+-------+---------+\n"
 	// @formatter:on
 
-	output, err := executeCommand(&root.Command, "status", "--env", "testing")
+	output, err := ExecuteWithArgs("status", "--env", "testing")
 	assert.Equal(r.T(), expected, output)
 	assert.Nil(r.T(), err)
 }
@@ -102,7 +91,7 @@ func (r *StatusCommandSuite) TestMultiplePendingMigration() {
 			"+-------+---------+\n"
 	// @formatter:on
 
-	output, err := executeCommand(&root.Command, "status", "--env", "testing")
+	output, err := ExecuteWithArgs("status", "--env", "testing")
 	assert.Equal(r.T(), expected, output)
 	assert.Nil(r.T(), err)
 }
@@ -130,10 +119,11 @@ func (r *StatusCommandSuite) TestTwoPendingOneAppliedMigration() {
 	})
 	assert.Nil(r.T(), err)
 
-	err = db.Migrations.Insert(&dao.Migration{Tag: "0.0.1", Timestamp: time.Now()})
+	output, err := ExecuteWithArgs("up", "--env", "testing", "-n", "1")
 	assert.Nil(r.T(), err)
+	assert.Equal(r.T(), "migration \"0.0.1\" successfully applied (up)\n", output)
 
-	output, err := executeCommand(&root.Command, "status", "--env", "testing")
+	output, err = ExecuteWithArgs("status", "--env", "testing")
 	assert.Equal(r.T(), 1, strings.Count(output, "pending"))
 	assert.Nil(r.T(), err)
 }

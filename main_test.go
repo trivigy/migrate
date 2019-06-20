@@ -1,7 +1,6 @@
 package migrate
 
 import (
-	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,33 +9,20 @@ import (
 
 type MigrateSuite struct {
 	suite.Suite
-	db *sql.DB
 }
 
 func (r *MigrateSuite) SetupTest() {
-	config := DatabaseConfig{
-		Driver: "sqlite3",
-		Source: ":memory:",
-	}
-	SetConfigs(map[string]DatabaseConfig{
-		"testing": config,
+	SetConfigs(map[string]DataSource{
+		"testing": {
+			Driver: "sqlite3",
+			Source: ":memory:",
+		},
 	})
-
-	var err error
-	r.db, err = sql.Open(config.Driver, config.Source)
-	assert.Nil(r.T(), err)
-
-	err = SetDB(r.db)
-	assert.Nil(r.T(), err)
-
-	err = EnsureConfigured()
-	assert.Nil(r.T(), err)
 }
 
 func (r *MigrateSuite) TearDownTest() {
-	Restart()
-	err := r.db.Close()
-	assert.Nil(r.T(), err)
+	_ = Clear()
+	assert.Nil(r.T(), Close())
 }
 
 func (r *MigrateSuite) TestExecuteWithArgs() {

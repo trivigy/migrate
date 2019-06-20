@@ -9,7 +9,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/trivigy/migrate/internal/dto"
-	"github.com/trivigy/migrate/internal/store"
 )
 
 type UpCommandSuite struct {
@@ -24,20 +23,12 @@ func (r *UpCommandSuite) SetupTest() {
 		},
 	})
 	assert.Nil(r.T(), err)
-
-	err = SetConfigs(rbytes)
-	assert.Nil(r.T(), err)
-
-	db, err = store.Open("sqlite3", ":memory:")
-	assert.Nil(r.T(), err)
-	err = db.Migrations.CreateTableIfNotExists()
-	assert.Nil(r.T(), err)
+	assert.Nil(r.T(), SetConfigs(rbytes))
 }
 
 func (r *UpCommandSuite) TearDownTest() {
-	Restart()
-	err := db.Close()
-	assert.Nil(r.T(), err)
+	_ = Clear()
+	assert.Nil(r.T(), Close())
 }
 
 func (r *UpCommandSuite) TestSingleMigrationAppliedWithDryRun() {
@@ -52,7 +43,7 @@ func (r *UpCommandSuite) TestSingleMigrationAppliedWithDryRun() {
 	})
 	assert.Nil(r.T(), err)
 
-	output, err := executeCommand(&root.Command, "up", "--env", "testing", "--dry-run")
+	output, err := ExecuteWithArgs("up", "--env", "testing", "--dry-run")
 	assert.Nil(r.T(), err)
 
 	// @formatter:off
@@ -76,7 +67,7 @@ func (r *UpCommandSuite) TestSingleMigrationApplied() {
 	})
 	assert.Nil(r.T(), err)
 
-	output, err := executeCommand(&root.Command, "up", "--env", "testing")
+	output, err := ExecuteWithArgs("up", "--env", "testing")
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), "migration \"0.0.1\" successfully applied (up)\n", output)
 
@@ -98,7 +89,7 @@ func (r *UpCommandSuite) TestSingleMigrationAppliedWithMultipleQueries() {
 	})
 	assert.Nil(r.T(), err)
 
-	output, err := executeCommand(&root.Command, "up", "--env", "testing")
+	output, err := ExecuteWithArgs("up", "--env", "testing")
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), "migration \"0.0.1\" successfully applied (up)\n", output)
 
@@ -130,7 +121,7 @@ func (r *UpCommandSuite) TestMultipleMigrationApplied() {
 	})
 	assert.Nil(r.T(), err)
 
-	output, err := executeCommand(&root.Command, "up", "--env", "testing")
+	output, err := ExecuteWithArgs("up", "--env", "testing")
 	assert.Nil(r.T(), err)
 
 	// @formatter:off
@@ -168,7 +159,7 @@ func (r *UpCommandSuite) TestMultipleMigrationAppliedWithSingleStep() {
 	})
 	assert.Nil(r.T(), err)
 
-	output, err := executeCommand(&root.Command, "up", "--env", "testing", "-n", "1")
+	output, err := ExecuteWithArgs("up", "--env", "testing", "-n", "1")
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), "migration \"0.0.1\" successfully applied (up)\n", output)
 

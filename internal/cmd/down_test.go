@@ -9,7 +9,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/trivigy/migrate/internal/dto"
-	"github.com/trivigy/migrate/internal/store"
 )
 
 type DownCommandSuite struct {
@@ -24,20 +23,12 @@ func (r *DownCommandSuite) SetupTest() {
 		},
 	})
 	assert.Nil(r.T(), err)
-
-	err = SetConfigs(rbytes)
-	assert.Nil(r.T(), err)
-
-	db, err = store.Open("sqlite3", ":memory:")
-	assert.Nil(r.T(), err)
-	err = db.Migrations.CreateTableIfNotExists()
-	assert.Nil(r.T(), err)
+	assert.Nil(r.T(), SetConfigs(rbytes))
 }
 
 func (r *DownCommandSuite) TearDownTest() {
-	Restart()
-	err := db.Close()
-	assert.Nil(r.T(), err)
+	_ = Clear()
+	assert.Nil(r.T(), Close())
 }
 
 func (r *DownCommandSuite) TestSingleMigrationRemovedWithDryRun() {
@@ -52,11 +43,11 @@ func (r *DownCommandSuite) TestSingleMigrationRemovedWithDryRun() {
 	})
 	assert.Nil(r.T(), err)
 
-	output, err := executeCommand(&root.Command, "up", "--env", "testing")
+	output, err := ExecuteWithArgs("up", "--env", "testing")
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), "migration \"0.0.1\" successfully applied (up)\n", output)
 
-	output, err = executeCommand(&root.Command, "down", "--env", "testing", "--dry-run")
+	output, err = ExecuteWithArgs("down", "--env", "testing", "--dry-run")
 	assert.Nil(r.T(), err)
 
 	// @formatter:off
@@ -80,11 +71,11 @@ func (r *DownCommandSuite) TestSingleMigrationRemoved() {
 	})
 	assert.Nil(r.T(), err)
 
-	output, err := executeCommand(&root.Command, "up", "--env", "testing")
+	output, err := ExecuteWithArgs("up", "--env", "testing")
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), "migration \"0.0.1\" successfully applied (up)\n", output)
 
-	output, err = executeCommand(&root.Command, "down", "--env", "testing")
+	output, err = ExecuteWithArgs("down", "--env", "testing")
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), "migration \"0.0.1\" successfully removed (down)\n", output)
 
@@ -106,11 +97,11 @@ func (r *DownCommandSuite) TestSingleMigrationDeletedWithMultipleQueries() {
 	})
 	assert.Nil(r.T(), err)
 
-	output, err := executeCommand(&root.Command, "up", "--env", "testing")
+	output, err := ExecuteWithArgs("up", "--env", "testing")
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), "migration \"0.0.1\" successfully applied (up)\n", output)
 
-	output, err = executeCommand(&root.Command, "down", "--env", "testing")
+	output, err = ExecuteWithArgs("down", "--env", "testing")
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), "migration \"0.0.1\" successfully removed (down)\n", output)
 
@@ -141,7 +132,7 @@ func (r *UpCommandSuite) TestMultipleMigrationRemoved() {
 	})
 	assert.Nil(r.T(), err)
 
-	output, err := executeCommand(&root.Command, "up", "--env", "testing")
+	output, err := ExecuteWithArgs("up", "--env", "testing")
 	assert.Nil(r.T(), err)
 	// @formatter:off
 	expectedApplied :=
@@ -150,7 +141,7 @@ func (r *UpCommandSuite) TestMultipleMigrationRemoved() {
 	// @formatter:on
 	assert.Equal(r.T(), expectedApplied, output)
 
-	output, err = executeCommand(&root.Command, "down", "--env", "testing")
+	output, err = ExecuteWithArgs("down", "--env", "testing")
 	assert.Nil(r.T(), err)
 	// @formatter:off
 	expectedRemoved :=
@@ -186,7 +177,7 @@ func (r *UpCommandSuite) TestMultipleMigrationDeletedWithSingleStep() {
 	})
 	assert.Nil(r.T(), err)
 
-	output, err := executeCommand(&root.Command, "up", "--env", "testing")
+	output, err := ExecuteWithArgs("up", "--env", "testing")
 	assert.Nil(r.T(), err)
 	// @formatter:off
 	expectedApplied :=
@@ -195,7 +186,7 @@ func (r *UpCommandSuite) TestMultipleMigrationDeletedWithSingleStep() {
 	// @formatter:on
 	assert.Equal(r.T(), expectedApplied, output)
 
-	output, err = executeCommand(&root.Command, "down", "--env", "testing", "-n", "1")
+	output, err = ExecuteWithArgs("down", "--env", "testing", "-n", "1")
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), "migration \"0.0.2\" successfully removed (down)\n", output)
 
@@ -203,7 +194,7 @@ func (r *UpCommandSuite) TestMultipleMigrationDeletedWithSingleStep() {
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), 0, len(unittests))
 
-	output, err = executeCommand(&root.Command, "down", "--env", "testing", "-n", "1")
+	output, err = ExecuteWithArgs("down", "--env", "testing", "-n", "1")
 	assert.Nil(r.T(), err)
 	assert.Equal(r.T(), "migration \"0.0.1\" successfully removed (down)\n", output)
 

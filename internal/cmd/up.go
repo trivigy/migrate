@@ -60,7 +60,6 @@ func (r *upCommand) run(cmd *cobra.Command, args []string) {
 			fmt.Fprintf(cmd.OutOrStderr(), "%+v\n", errors.WithStack(err))
 			return
 		}
-		defer db.Close()
 	}
 
 	migrationPlan := generateMigrationPlan(cmd, db, enum.DirectionUp)

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"database/sql"
 	"fmt"
 	"os"
 	"sort"
@@ -29,12 +28,17 @@ var (
 )
 
 func init() {
-	Restart()
+	_ = Clear()
 }
 
-// Restart restarts the application with all the command flags, configurations,
+// Clear restarts the application with all the command flags, configurations,
 // and migration registory reset. This is primarily useful for testing.
-func Restart() {
+func Clear() []dto.Migration {
+	temp := make([]dto.Migration, 0)
+	for _, val := range registry {
+		temp = append(temp, val)
+	}
+
 	registry = map[string]dto.Migration{}
 	configs = viper.New()
 	create = newCreateCommand()
@@ -42,6 +46,14 @@ func Restart() {
 	status = newStatusCommand()
 	up = newUpCommand()
 	root = newRootCommand()
+	return temp
+}
+
+// Close terminates the database connection.
+func Close() error {
+	err := db.Close()
+	db = nil
+	return err
 }
 
 // SetConfigs allows for passing database connection configurations with custom
@@ -52,14 +64,6 @@ func SetConfigs(rbytes []byte) error {
 		return errors.WithStack(err)
 	}
 	return nil
-}
-
-// SetDB configures the use of custom created database connection. Make sure
-// that it is either MySQL, PostresSQL, MSSQL, or Sqlite.
-func SetDB(dbc *sql.DB) error {
-	var err error
-	db, err = store.OpenWithDB(dbc)
-	return err
 }
 
 // Execute runs the main application loop.
@@ -88,12 +92,6 @@ func Append(migration dto.Migration) error {
 	}
 	registry[migration.Tag.String()] = migration
 	return nil
-}
-
-// EnsureConfigured creates the migrations database in case it does not exist.
-// This is primarily useful for testing.
-func EnsureConfigured() error {
-	return db.Migrations.CreateTableIfNotExists()
 }
 
 func generateMigrationPlan(cmd *cobra.Command, db *store.Context, direction enum.Direction) []dto.Migration {

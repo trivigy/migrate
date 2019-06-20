@@ -49,11 +49,6 @@ func Open(driver, source string) (*Context, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	return OpenWithDB(db)
-}
-
-// OpenWithDB initializes the context with the provided database connection.
-func OpenWithDB(db *sql.DB) (*Context, error) {
 	dialect := supportedDialects[getDriverName(db.Driver())]
 
 	// When using the mysql driver, make sure that the parseTime option is

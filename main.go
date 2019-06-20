@@ -1,7 +1,6 @@
 package migrate
 
 import (
-	"database/sql"
 	"encoding/json"
 
 	"github.com/pkg/errors"
@@ -13,7 +12,7 @@ import (
 
 // SetConfigs allows for passing database connection configurations with custom
 // environment names.
-func SetConfigs(configs map[string]DatabaseConfig) {
+func SetConfigs(configs map[string]DataSource) {
 	rbytes, err := yaml.Marshal(configs)
 	if err != nil {
 		panic(err)
@@ -22,12 +21,6 @@ func SetConfigs(configs map[string]DatabaseConfig) {
 	if err := cmd.SetConfigs(rbytes); err != nil {
 		panic(err)
 	}
-}
-
-// SetDB configures the use of custom created database connection. Make sure
-// that it is either MySQL, PostresSQL, MSSQL, or Sqlite.
-func SetDB(db *sql.DB) error {
-	return cmd.SetDB(db)
 }
 
 // Execute runs the main application loop.
@@ -64,14 +57,25 @@ func Append(migration Migration) {
 	}
 }
 
-// Restart restarts the application with all the command flags, configurations,
+// Clear restarts the application with all the command flags, configurations,
 // and migration registory reset. This is primarily useful for testing.
-func Restart() {
-	cmd.Restart()
+func Clear() []Migration {
+	dtoMigrations := cmd.Clear()
+
+	rbytes, err := json.Marshal(dtoMigrations)
+	if err != nil {
+		panic(err)
+	}
+
+	migrations := make([]Migration, 0)
+	if err := json.Unmarshal(rbytes, &migrations); err != nil {
+		panic(err)
+	}
+
+	return migrations
 }
 
-// EnsureConfigured creates the migrations database in case it does not exist.
-// This is primarily useful for testing.
-func EnsureConfigured() error {
-	return cmd.EnsureConfigured()
+// Close terminates the database connection.
+func Close() error {
+	return cmd.Close()
 }

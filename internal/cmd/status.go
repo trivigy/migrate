@@ -51,7 +51,6 @@ func (r *statusCommand) run(cmd *cobra.Command, args []string) {
 			fmt.Fprintf(cmd.OutOrStderr(), "%+v\n", errors.WithStack(err))
 			return
 		}
-		defer db.Close()
 	}
 
 	if err := db.Migrations.CreateTableIfNotExists(); err != nil {
