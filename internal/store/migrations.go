@@ -11,7 +11,7 @@ import (
 	"github.com/trivigy/migrate/internal/dao"
 )
 
-const migrationsTableName = "__migrations"
+const migrationsTableName = "migrations"
 
 // Migrations defines a wrapper struct for all of the migrations table
 // operations.
