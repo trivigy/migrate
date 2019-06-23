@@ -1,6 +1,7 @@
 MIT License
 
 Copyright (c) 2014 Ruben Vermeersch <ruben@rocketeer.be>
+
 Copyright (c) 2019 Konstantin Itskov <konstantin.itskov@kovits.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
