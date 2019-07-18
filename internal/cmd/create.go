@@ -21,7 +21,7 @@ import (
 )
 
 func init() {
-	migrate.Append(&migrate.Migration{
+	migrate.Append(migrate.Migration{
 		Tag: "0.0.3",
 		Up: []migrate.Operation{},
 		Down: []migrate.Operation{},
