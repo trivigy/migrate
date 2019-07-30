@@ -13,7 +13,7 @@ type rootCommand struct {
 
 func newRootCommand() *rootCommand {
 	cmd := &rootCommand{}
-	cmd.Version = "0.1.0"
+	cmd.Version = "1.0.4"
 	cmd.Use = filepath.Base(os.Args[0])
 	cmd.Long = "Idiomatic GO database migration tool"
 
