@@ -13,6 +13,7 @@ import (
 
 // Destroy represents the database destroy command.
 type Destroy struct {
+	common
 	config map[string]Config
 }
 
@@ -29,7 +30,7 @@ type DestroyOptions struct {
 // NewCommand returns a new cobra.Command destroy command object.
 func (r *Destroy) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "destroy",
+		Use:   name,
 		Short: "blah blah blah destroy.",
 		Long:  "blah blah blah destroy",
 		Args:  require.Args(r.validation),
@@ -42,6 +43,7 @@ func (r *Destroy) NewCommand(name string) *cobra.Command {
 			opts := CreateOptions{Env: env}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
+		SilenceUsage: true,
 	}
 
 	pflags := cmd.PersistentFlags()

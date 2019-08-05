@@ -22,16 +22,16 @@ func (r *DestroySuite) SetupTest() {
 	r.name = "destroy"
 }
 
-func (r *DestroySuite) TestDestroy() {
+func (r *DestroySuite) TestDestroyCommand() {
 	config := map[string]Config{}
 	if os.Getenv("CI") != "true" {
 		config = map[string]Config{
 			"default": {
 				Driver: docker.Postgres{
-					Tag:    "9.6",
-					Name:   randomdata.SillyName(),
-					DBName: "unittest",
-					User:   "postgres",
+					RefName: randomdata.SillyName(),
+					Version: "9.6",
+					DBName:  "unittest",
+					User:    "postgres",
 				},
 			},
 		}
@@ -39,8 +39,8 @@ func (r *DestroySuite) TestDestroy() {
 		config = map[string]Config{
 			"default": {
 				Driver: provider.SQLDatabase{
-					Driver: "postgres",
-					Source: "host=localhost user=postgres dbname=unittest sslmode=disable",
+					Dialect:    "postgres",
+					DataSource: "host=localhost user=postgres dbname=unittest sslmode=disable",
 				},
 			},
 		}

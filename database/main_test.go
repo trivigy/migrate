@@ -20,14 +20,14 @@ func (r *DatabaseSuite) SetupTest() {
 	r.name = "database"
 }
 
-func (r *DatabaseSuite) TestDatabase_SinglePendingMigration() {
+func (r *DatabaseSuite) TestRootCommand() {
 	command := NewDatabase(map[string]Config{
 		"default": {
 			Driver: docker.Postgres{
-				Tag:    "9.6",
-				Name:   randomdata.SillyName(),
-				DBName: "unittest",
-				User:   "postgres",
+				RefName: randomdata.SillyName(),
+				Version: "9.6",
+				DBName:  "unittest",
+				User:    "postgres",
 			},
 		},
 	})

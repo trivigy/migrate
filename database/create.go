@@ -13,6 +13,7 @@ import (
 
 // Create represents the database create command object.
 type Create struct {
+	common
 	config map[string]Config
 }
 
@@ -29,7 +30,7 @@ type CreateOptions struct {
 // NewCommand creates a new cobra.Command, configures it and returns it.
 func (r *Create) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   name,
 		Short: "blah blah blah create.",
 		Long:  "blah blah blah create",
 		Args:  require.Args(r.validation),
@@ -42,6 +43,7 @@ func (r *Create) NewCommand(name string) *cobra.Command {
 			opts := CreateOptions{Env: env}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
+		SilenceUsage: true,
 	}
 
 	pflags := cmd.PersistentFlags()

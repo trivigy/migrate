@@ -34,10 +34,10 @@ func (r *MigrateSuite) TestMigrate_ExecuteWithArgs() {
 			},
 			Database: database.Config{
 				Driver: docker.Postgres{
-					Tag:    "9.6",
-					Name:   randomdata.SillyName(),
-					DBName: "unittest",
-					User:   "postgres",
+					RefName: randomdata.SillyName(),
+					Version: "9.6",
+					DBName:  "unittest",
+					User:    "postgres",
 				},
 			},
 		},

@@ -11,13 +11,13 @@ import (
 
 // SQLDatabase represents an abstract remote sql database driver.
 type SQLDatabase struct {
-	Driver string
-	Source string
+	Dialect    string `json:"dialect" yaml:"dialect"`
+	DataSource string `json:"dataSource" yaml:"dataSource"`
 }
 
 // Setup executes the resource creation process.
 func (r SQLDatabase) Setup(out io.Writer) error {
-	db, err := sql.Open(r.Driver, r.Source)
+	db, err := sql.Open(r.Dialect, r.DataSource)
 	if err != nil {
 		return err
 	}
@@ -43,4 +43,12 @@ func (r SQLDatabase) Setup(out io.Writer) error {
 // TearDown executes the resource destruction process.
 func (r SQLDatabase) TearDown(out io.Writer) error {
 	return nil
+}
+
+func (r SQLDatabase) Name() string {
+	return r.Dialect
+}
+
+func (r SQLDatabase) Source() string {
+	return r.DataSource
 }

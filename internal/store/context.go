@@ -81,15 +81,15 @@ func (r *Context) Close() error {
 }
 
 func getDriverName(driver driver.Driver) string {
-	sqlDriverNamesByType := map[reflect.Type]string{}
+	registeredDriverNamesByType := map[reflect.Type]string{}
 	for _, driverName := range sql.Drivers() {
 		if db, _ := sql.Open(driverName, ""); db != nil {
 			driverType := reflect.TypeOf(db.Driver())
-			sqlDriverNamesByType[driverType] = driverName
+			registeredDriverNamesByType[driverType] = driverName
 		}
 	}
 	driverType := reflect.TypeOf(driver)
-	if driverName, found := sqlDriverNamesByType[driverType]; found {
+	if driverName, found := registeredDriverNamesByType[driverType]; found {
 		return driverName
 	}
 	return ""

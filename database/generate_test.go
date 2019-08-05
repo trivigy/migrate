@@ -22,7 +22,7 @@ func (r *GenerateSuite) SetupTest() {
 	r.name = "generate"
 }
 
-func (r *GenerateSuite) TestGenerate() {
+func (r *GenerateSuite) TestGenerateCommand() {
 	defaultConfig := map[string]Config{"default": {}}
 
 	dir, err := ioutil.TempDir(os.TempDir(), "migrate-")

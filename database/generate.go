@@ -42,6 +42,7 @@ func init() {
 // Generate represents the generate command which allows for generating new
 // templates of the database migrations file.
 type Generate struct {
+	common
 	config map[string]Config
 }
 

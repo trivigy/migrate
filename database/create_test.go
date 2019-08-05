@@ -22,16 +22,16 @@ func (r *CreateSuite) SetupTest() {
 	r.name = "create"
 }
 
-func (r *CreateSuite) TestCreate() {
+func (r *CreateSuite) TestCreateCommand() {
 	config := map[string]Config{}
 	if os.Getenv("CI") != "true" {
 		config = map[string]Config{
 			"default": {
 				Driver: docker.Postgres{
-					Tag:    "9.6",
-					Name:   randomdata.SillyName(),
-					DBName: "unittest",
-					User:   "postgres",
+					RefName: randomdata.SillyName(),
+					Version: "9.6",
+					DBName:  "unittest",
+					User:    "postgres",
 				},
 			},
 		}
@@ -39,8 +39,8 @@ func (r *CreateSuite) TestCreate() {
 		config = map[string]Config{
 			"default": {
 				Driver: provider.SQLDatabase{
-					Driver: "postgres",
-					Source: "host=localhost user=postgres dbname=unittest sslmode=disable",
+					Dialect:    "postgres",
+					DataSource: "host=localhost user=postgres dbname=unittest sslmode=disable",
 				},
 			},
 		}

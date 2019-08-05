@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/gorp.v1"
 
-	"github.com/trivigy/migrate/internal/dao"
+	"github.com/trivigy/migrate/internal/store/model"
 )
 
 const unittestsTableName = "unittests"
@@ -21,15 +21,15 @@ type Unittests struct {
 // GetDBMap returns the underlying unittests table database model object.
 func (r Unittests) GetDBMap() *gorp.DbMap {
 	dbMap := &gorp.DbMap{Db: r.db, Dialect: r.dialect}
-	t := dbMap.AddTableWithName(dao.Unittest{}, unittestsTableName)
+	t := dbMap.AddTableWithName(model.Unittest{}, unittestsTableName)
 	t.SetKeys(false, "Value")
 	return dbMap
 }
 
 // GetUnittests returns database unittest records.
-func (r Unittests) GetUnittests() ([]dao.Unittest, error) {
+func (r Unittests) GetUnittests() ([]model.Unittest, error) {
 	dbMap := r.GetDBMap()
-	unittests := make([]dao.Unittest, 0)
+	unittests := make([]model.Unittest, 0)
 	query := fmt.Sprintf(
 		"SELECT * FROM %s",
 		dbMap.Dialect.QuotedTableForQuery("", unittestsTableName),

@@ -21,18 +21,14 @@ import (
 
 // Postgres represents a driver for a docker based postgres database.
 type Postgres struct {
-	Tag            string
-	Name           string
-	Password       string
-	PasswordFile   string
-	User           string
-	UserFile       string
-	DBName         string
-	DBNameFile     string
-	InitDBArgs     string
-	InitDBArgsFile string
-	InitDBWalDir   string
-	PGData         string
+	RefName      string
+	Version      string
+	Password     string
+	User         string
+	DBName       string
+	InitDBArgs   string
+	InitDBWalDir string
+	PGData       string
 }
 
 // Setup executes the resource creation process.
@@ -48,7 +44,7 @@ func (r Postgres) Setup(out io.Writer) error {
 
 	ctx := context.Background()
 	filter := filters.NewArgs()
-	filter.Add("name", r.Name)
+	filter.Add("name", r.RefName)
 	listOpts := types.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
@@ -60,7 +56,7 @@ func (r Postgres) Setup(out io.Writer) error {
 	}
 
 	ctx = context.Background()
-	refStr := "postgres:" + r.Tag
+	refStr := "postgres:" + r.Version
 	pullOpts := types.ImagePullOptions{}
 	reader, err := docker.ImagePull(ctx, refStr, pullOpts)
 	if err != nil {
@@ -76,26 +72,14 @@ func (r Postgres) Setup(out io.Writer) error {
 	if r.Password != "" {
 		envVars = append(envVars, "POSTGRES_PASSWORD="+r.Password)
 	}
-	if r.PasswordFile != "" {
-		envVars = append(envVars, "POSTGRES_PASSWORD_FILE="+r.PasswordFile)
-	}
 	if r.User != "" {
 		envVars = append(envVars, "POSTGRES_USER="+r.User)
-	}
-	if r.UserFile != "" {
-		envVars = append(envVars, "POSTGRES_USER_FILE="+r.UserFile)
 	}
 	if r.DBName != "" {
 		envVars = append(envVars, "POSTGRES_DB="+r.DBName)
 	}
-	if r.DBNameFile != "" {
-		envVars = append(envVars, "POSTGRES_DB_FILE="+r.DBNameFile)
-	}
 	if r.InitDBArgs != "" {
 		envVars = append(envVars, "POSTGRES_INITDB_ARGS="+r.InitDBArgs)
-	}
-	if r.InitDBArgsFile != "" {
-		envVars = append(envVars, "POSTGRES_INITDB_ARGS_FILE="+r.InitDBArgsFile)
 	}
 	if r.InitDBWalDir != "" {
 		envVars = append(envVars, "POSTGRES_INITDB_WALDIR="+r.InitDBWalDir)
@@ -108,7 +92,7 @@ func (r Postgres) Setup(out io.Writer) error {
 		AutoRemove: true,
 	}
 	networkCfg := &network.NetworkingConfig{}
-	resp, err := docker.ContainerCreate(ctx, createCfg, hostCfg, networkCfg, r.Name)
+	resp, err := docker.ContainerCreate(ctx, createCfg, hostCfg, networkCfg, r.RefName)
 	if err != nil {
 		return err
 	}
@@ -163,7 +147,7 @@ func (r Postgres) TearDown(out io.Writer) error {
 
 	ctx := context.Background()
 	filter := filters.NewArgs()
-	filter.Add("name", r.Name)
+	filter.Add("name", r.RefName)
 	listOpts := types.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
@@ -194,4 +178,55 @@ func (r Postgres) TearDown(out io.Writer) error {
 		return err
 	}
 	return nil
+}
+
+func (r Postgres) Name() string {
+	return "postgres"
+}
+
+func (r Postgres) Source() string {
+	docker, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithVersion("1.39"),
+	)
+	if err != nil {
+		return ""
+	}
+	defer docker.Close()
+
+	ctx := context.Background()
+	filter := filters.NewArgs()
+	filter.Add("name", r.RefName)
+	listOpts := types.ContainerListOptions{Filters: filter}
+	containers, err := docker.ContainerList(ctx, listOpts)
+	if err != nil {
+		return ""
+	}
+
+	if len(containers) == 0 {
+		return ""
+	}
+
+	ctx = context.Background()
+	info, err := docker.ContainerInspect(ctx, containers[0].ID)
+	if err != nil {
+		return ""
+	}
+
+	address := info.NetworkSettings.IPAddress
+	url := nub.PsqlDSN{Host: address}
+	if r.Password != "" {
+		url.Password = r.Password
+	}
+	if r.User != "" {
+		url.User = r.User
+	} else {
+		url.User = "postgres"
+	}
+	if r.DBName != "" {
+		url.DBName = r.DBName
+	} else {
+		url.DBName = url.User
+	}
+	return url.Source()
 }
