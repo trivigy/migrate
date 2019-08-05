@@ -64,6 +64,9 @@ func (r *Database) NewCommand(name string) *cobra.Command {
 		NewGenerate(r.config).(*Generate).NewCommand("generate"),
 		NewCreate(r.config).(*Create).NewCommand("create"),
 		NewDestroy(r.config).(*Destroy).NewCommand("destroy"),
+		NewUp(r.config).(*Up).NewCommand("up"),
+		NewDown(r.config).(*Down).NewCommand("down"),
+		NewReport(r.config).(*Report).NewCommand("report"),
 	)
 
 	pflags := cmd.PersistentFlags()

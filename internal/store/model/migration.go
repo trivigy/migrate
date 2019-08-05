@@ -1,4 +1,4 @@
-package dao
+package model
 
 import (
 	"time"
@@ -7,5 +7,6 @@ import (
 // Migration defines a migrations table record.
 type Migration struct {
 	Tag       string    `db:"tag"`
+	Name      string    `db:"name"`
 	Timestamp time.Time `db:"timestamp"`
 }

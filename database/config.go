@@ -6,6 +6,6 @@ import (
 
 // Config defines database configuration to use for database migrations.
 type Config struct {
-	Migrations Migrations    `json:"migrations" yaml:"migrations"`
-	Driver     driver.Driver `json:"driver" yaml:"driver"`
+	Migrations Migrations      `json:"migrations" yaml:"migrations"`
+	Driver     driver.Database `json:"driver" yaml:"driver"`
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/gorp.v1"
 
-	"github.com/trivigy/migrate/internal/dao"
+	"github.com/trivigy/migrate/internal/store/model"
 )
 
 const migrationsTableName = "migrations"
@@ -23,7 +23,7 @@ type Migrations struct {
 // GetDBMap returns the underlying migrations table database model object.
 func (r Migrations) GetDBMap() *gorp.DbMap {
 	dbMap := &gorp.DbMap{Db: r.db, Dialect: r.dialect}
-	t := dbMap.AddTableWithName(dao.Migration{}, migrationsTableName)
+	t := dbMap.AddTableWithName(model.Migration{}, migrationsTableName)
 	t.SetKeys(false, "Tag")
 	return dbMap
 }
@@ -65,9 +65,9 @@ func (r Migrations) Delete(migrations ...interface{}) error {
 }
 
 // GetMigrations returns database migration records.
-func (r Migrations) GetMigrations() ([]dao.Migration, error) {
+func (r Migrations) GetMigrations() ([]model.Migration, error) {
 	dbMap := r.GetDBMap()
-	migrations := make([]dao.Migration, 0)
+	migrations := make([]model.Migration, 0)
 	query := fmt.Sprintf(
 		`SELECT * FROM %s`,
 		dbMap.Dialect.QuotedTableForQuery("", migrationsTableName),
@@ -79,13 +79,13 @@ func (r Migrations) GetMigrations() ([]dao.Migration, error) {
 }
 
 // GetMigrationsSorted returns sorted database migration records.
-func (r Migrations) GetMigrationsSorted() (dao.Migrations, error) {
+func (r Migrations) GetMigrationsSorted() (model.Migrations, error) {
 	databaseMigrations, err := r.GetMigrations()
 	if err != nil {
 		return nil, err
 	}
 
-	sortedDatabaseMigrations := dao.Migrations(databaseMigrations)
+	sortedDatabaseMigrations := model.Migrations(databaseMigrations)
 	sort.Sort(sortedDatabaseMigrations)
 	return sortedDatabaseMigrations, nil
 }
