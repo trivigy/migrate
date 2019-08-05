@@ -2,7 +2,10 @@ version: 2.1
 executors:
   golang:
     docker:
-      - image: circleci/golang:1.12.5
+      - image: circleci/golang:1.12.6
+      - image: circleci/postgres:9.6
+        environment:
+          POSTGRES_DB: unittest
 jobs:
   lint:
     executor: golang
@@ -13,6 +16,7 @@ jobs:
   test:
     executor: golang
     steps:
+      - setup_remote_docker
       - checkout
       - run: go get -v -d ./...
       - run: go test -v -race ./...

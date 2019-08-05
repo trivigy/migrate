@@ -1,81 +1,79 @@
 package migrate
 
 import (
-	"encoding/json"
+	"io"
+	"sync"
 
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
+	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/internal/cmd"
-	"github.com/trivigy/migrate/internal/dto"
+	"github.com/trivigy/migrate/cluster"
+	"github.com/trivigy/migrate/database"
+	"github.com/trivigy/migrate/internal/nub"
 )
 
-// SetConfigs allows for passing database connection configurations with custom
-// environment names.
-func SetConfigs(configs map[string]DataSource) {
-	rbytes, err := yaml.Marshal(configs)
-	if err != nil {
-		panic(err)
-	}
+// Registry is the container holding registered migrations.
+var Registry sync.Map
 
-	if err := cmd.SetConfigs(rbytes); err != nil {
-		panic(err)
-	}
+// Migrate represents the migrate command object.
+type Migrate struct {
+	config map[string]Config
 }
 
-// Execute runs the main application loop.
-func Execute() error {
-	if err := cmd.Execute(); err != nil {
+// NewMigrate instantiates a new migrate object and returns it.
+func NewMigrate(config map[string]Config) Command {
+	return &Migrate{config: config}
+}
+
+// NewCommand returns a new cobra.Command object.
+func (r *Migrate) NewCommand(name string) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          name,
+		Long:         "Devops and migrations management toolset",
+		SilenceUsage: true,
+	}
+
+	clusterConfig := make(map[string]cluster.Config)
+	for key, value := range r.config {
+		clusterConfig[key] = value.Cluster
+	}
+	Cluster := cluster.NewCluster(clusterConfig).(*cluster.Cluster)
+
+	databaseConfig := make(map[string]database.Config)
+	for key, value := range r.config {
+		databaseConfig[key] = value.Database
+	}
+	Database := database.NewDatabase(databaseConfig).(*database.Database)
+
+	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
+	cmd.AddCommand(
+		Cluster.NewCommand("cluster"),
+		Database.NewCommand("database"),
+	)
+
+	pflags := cmd.PersistentFlags()
+	pflags.Bool("help", false, "Show help information.")
+	pflags.StringP(
+		"env", "e", nub.DefaultEnvironment,
+		"Run with env `ENV` configurations.",
+	)
+
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.BoolP(
+		"version", "v", false,
+		"Print version information and quit.",
+	)
+	return cmd
+}
+
+// Execute runs the command.
+func (r *Migrate) Execute(name string, out io.Writer, args []string) error {
+	main := r.NewCommand(name)
+	main.SetOut(out)
+	main.SetArgs(args)
+	if err := main.Execute(); err != nil {
 		return errors.WithStack(err)
 	}
 	return nil
-}
-
-// ExecuteWithArgs runs the main application loop with provided arguments.
-func ExecuteWithArgs(args ...string) (string, error) {
-	output, err := cmd.ExecuteWithArgs(args...)
-	if err != nil {
-		return output, errors.WithStack(err)
-	}
-	return output, nil
-}
-
-// Append allows for adding migrations to the migration registry list.
-func Append(migration Migration) {
-	rbytes, err := json.Marshal(migration)
-	if err != nil {
-		panic(err)
-	}
-
-	dtoMigration := dto.Migration{}
-	if err := json.Unmarshal(rbytes, &dtoMigration); err != nil {
-		panic(err)
-	}
-
-	if err := cmd.Append(dtoMigration); err != nil {
-		panic(err)
-	}
-}
-
-// Clear restarts the application with all the command flags, configurations,
-// and migration registory reset. This is primarily useful for testing.
-func Clear() []Migration {
-	dtoMigrations := cmd.Clear()
-
-	rbytes, err := json.Marshal(dtoMigrations)
-	if err != nil {
-		panic(err)
-	}
-
-	migrations := make([]Migration, 0)
-	if err := json.Unmarshal(rbytes, &migrations); err != nil {
-		panic(err)
-	}
-
-	return migrations
-}
-
-// Close terminates the database connection.
-func Close() error {
-	return cmd.Close()
 }

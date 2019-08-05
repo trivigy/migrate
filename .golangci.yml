@@ -18,6 +18,7 @@ linters:
     - deadcode
     - unused
     - errcheck
+    - dupl
 
 issues:
   exclude-use-default: false
@@ -30,3 +31,6 @@ issues:
     - linters:
         - gosec
       text: "G201:"
+    - linters:
+        - gosec
+      text: "G304:"
