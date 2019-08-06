@@ -1,4 +1,4 @@
-package nub
+package types
 
 import (
 	"fmt"

@@ -1,18 +1,32 @@
 package release
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 
+	"github.com/Pallinder/go-randomdata"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/trivigy/migrate/v2/driver"
+	"github.com/trivigy/migrate/v2/driver/provider"
 )
 
 type ReleaseSuite struct {
 	suite.Suite
-	name string
+	driver driver.Cluster
 }
 
-func (r *ReleaseSuite) SetupTest() {
-	r.name = "release"
+func (r *ReleaseSuite) SetupSuite() {
+	buffer := bytes.NewBuffer(nil)
+	r.driver = provider.Kind{Name: strings.ToLower(randomdata.SillyName())}
+	assert.Nil(r.T(), r.driver.Setup(buffer))
+}
+
+func (r *ReleaseSuite) TearDownSuite() {
+	buffer := bytes.NewBuffer(nil)
+	assert.Nil(r.T(), r.driver.TearDown(buffer))
 }
 
 func (r *ReleaseSuite) TestReleaseCommand() {

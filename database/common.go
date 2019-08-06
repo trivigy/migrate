@@ -5,7 +5,6 @@ import (
 	"os"
 	"sort"
 
-	"github.com/trivigy/migrate/v2/internal/enum"
 	"github.com/trivigy/migrate/v2/internal/store"
 	"github.com/trivigy/migrate/v2/internal/store/model"
 	"github.com/trivigy/migrate/v2/types"
@@ -18,7 +17,7 @@ type common struct{}
 // current state recorded on the database and direction.
 func (r common) GenerateMigrationPlan(
 	db *store.Context,
-	direction enum.Direction,
+	direction types.Direction,
 	migrations types.Migrations,
 ) ([]types.Migration, error) {
 	if err := db.Migrations.CreateTableIfNotExists(); err != nil {
@@ -55,7 +54,7 @@ func (r common) GenerateMigrationPlan(
 			}
 
 		} else if rgMig != nil && dbMig == nil {
-			if direction == enum.DirectionUp {
+			if direction == types.DirectionUp {
 				break
 			} else {
 				i--
@@ -67,7 +66,7 @@ func (r common) GenerateMigrationPlan(
 	}
 
 	plan := make([]types.Migration, 0)
-	if direction == enum.DirectionUp {
+	if direction == types.DirectionUp {
 		for j := i; j < len(sortedRegistryMigrations); j++ {
 			plan = append(plan, sortedRegistryMigrations[j])
 		}

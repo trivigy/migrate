@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/trivigy/migrate/v2/config"
-	"github.com/trivigy/migrate/v2/internal/enum"
 	"github.com/trivigy/migrate/v2/internal/nub"
 	"github.com/trivigy/migrate/v2/internal/require"
 	"github.com/trivigy/migrate/v2/internal/store"
@@ -122,7 +121,7 @@ func (r *Up) Run(out io.Writer, opts UpOptions) error {
 		return err
 	}
 
-	migrationPlan, err := r.GenerateMigrationPlan(db, enum.DirectionUp, cfg.Migrations)
+	migrationPlan, err := r.GenerateMigrationPlan(db, types.DirectionUp, cfg.Migrations)
 	if err != nil {
 		return err
 	}
@@ -136,7 +135,7 @@ func (r *Up) Run(out io.Writer, opts UpOptions) error {
 		for i := 0; i < steps; i++ {
 			fmt.Fprintf(out, "==> migration %q (%s)\n",
 				migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,
-				enum.DirectionUp,
+				types.DirectionUp,
 			)
 			for _, op := range migrationPlan[i].Up {
 				fmt.Fprintf(out, "%s;\n", op.Query)
@@ -145,7 +144,7 @@ func (r *Up) Run(out io.Writer, opts UpOptions) error {
 	} else {
 		for i := 0; i < steps; i++ {
 			for _, op := range migrationPlan[i].Up {
-				err := op.Execute(db, migrationPlan[i], enum.DirectionUp)
+				err := op.Execute(db, migrationPlan[i], types.DirectionUp)
 				if err != nil {
 					return err
 				}
@@ -158,13 +157,13 @@ func (r *Up) Run(out io.Writer, opts UpOptions) error {
 				return fmt.Errorf(
 					"failed recording migration %q (%s)",
 					migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,
-					enum.DirectionUp,
+					types.DirectionUp,
 				)
 			}
 
 			fmt.Fprintf(out, "migration %q successfully applied (%s)\n",
 				migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,
-				enum.DirectionUp,
+				types.DirectionUp,
 			)
 		}
 	}

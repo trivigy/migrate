@@ -14,10 +14,35 @@ jobs:
       - run: curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.17.1
       - run: golangci-lint run --deadline 5m ./...
   test:
-    executor: golang
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
-      - setup_remote_docker
       - checkout
+      - run:
+          name: Install golang
+          command: |
+            sudo rm -rf /usr/local/go
+            sudo rm -rf $(echo $GOPATH)
+            curl -O https://storage.googleapis.com/golang/go1.12.7.linux-amd64.tar.gz
+            sudo tar -C /usr/local -xzf go1.12.7.linux-amd64.tar.gz
+            export GOPATH=$HOME/.go
+            export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
+#      - run:
+#          name: Install Docker
+#          command: |
+#            sudo apt-get update --fix-missing
+#            sudo apt-get install -y \
+#                apt-transport-https \
+#                ca-certificates \
+#                curl \
+#                software-properties-common
+#            wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+#            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+#            sudo apt-key fingerprint 0EBFCD88
+#            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+#            sudo apt-get update
+#            sudo apt-get install -y docker-ce
+#            docker --version
       - run: go get -v -d ./...
       - run: go test -v -race ./...
 workflows:

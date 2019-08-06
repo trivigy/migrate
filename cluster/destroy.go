@@ -44,6 +44,7 @@ func (r *Destroy) NewCommand(name string) *cobra.Command {
 			opts := CreateOptions{Env: env}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
+		SilenceUsage: true,
 	}
 
 	pflags := cmd.PersistentFlags()

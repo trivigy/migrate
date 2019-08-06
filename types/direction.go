@@ -1,9 +1,11 @@
-package enum
+package types
 
 import (
 	"bytes"
 
 	"github.com/pkg/errors"
+
+	"github.com/trivigy/migrate/v2/internal/nub"
 )
 
 // Direction defines the type of the migration direction.
@@ -27,7 +29,7 @@ func (r Direction) String() string {
 }
 
 var toStringDirection = map[Direction]string{
-	Direction(0):  unknownStr,
+	Direction(0):  nub.UnknownStr,
 	DirectionUp:   directionUpStr,
 	DirectionDown: directionDownStr,
 }

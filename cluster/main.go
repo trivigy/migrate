@@ -118,7 +118,7 @@ func (r *Cluster) Execute(name string, output io.Writer, args []string) error {
 // 	return cfg, environment, nil
 // }
 //
-//
+
 // func NewKubeCtl(
 // 	gcloud *container.ClusterManagerClient,
 // 	config Cluster,

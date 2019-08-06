@@ -35,6 +35,7 @@ type Context struct {
 	db         *sql.DB
 	dialect    gorp.Dialect
 	Migrations Migrations
+	Releases   Releases
 	Unittests  Unittests
 }
 
@@ -65,6 +66,7 @@ func Open(driver, source string) (*Context, error) {
 		db:         db,
 		dialect:    dialect,
 		Migrations: Migrations{db, dialect},
+		Releases:   Releases{db, dialect},
 		Unittests:  Unittests{db, dialect},
 	}
 	return context, nil

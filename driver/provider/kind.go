@@ -3,9 +3,13 @@ package provider
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/kind/cmd/kind"
 	logutil "sigs.k8s.io/kind/pkg/log"
 )
@@ -86,14 +90,25 @@ func (r Kind) Execute(out io.Writer, args []string) error {
 	return nil
 }
 
-// KubeConfig returns the path to a kubeconfig file.
-func (r Kind) KubeConfig() (string, error) {
+// KubeConfig returns the content of kubeconfig file.
+func (r Kind) KubeConfig() (*rest.Config, error) {
 	buffer := bytes.NewBuffer(nil)
 	if err := r.Execute(buffer, []string{
 		"get", "kubeconfig-path",
 		"--name", r.Name,
 	}); err != nil {
-		return "", err
+		return nil, err
 	}
-	return buffer.String(), nil
+
+	kubeConfigBytes, err := ioutil.ReadFile(strings.TrimSpace(buffer.String()))
+	if err != nil {
+		return nil, err
+	}
+
+	kubeConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return kubeConfig, nil
 }

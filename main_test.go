@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/Pallinder/go-randomdata"
@@ -33,7 +34,7 @@ func (r *MigrateSuite) TestMigrate() {
 			},
 			Database: config.Database{
 				Driver: docker.Postgres{
-					RefName: randomdata.SillyName(),
+					RefName: strings.ToLower(randomdata.SillyName()),
 					Version: "9.6",
 					DBName:  "unittest",
 					User:    "postgres",
