@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"bytes"
 	"io"
 	"os"
 
@@ -83,4 +84,16 @@ func (r Kind) Execute(out io.Writer, args []string) error {
 	}
 	close(outC)
 	return nil
+}
+
+// KubeConfig returns the path to a kubeconfig file.
+func (r Kind) KubeConfig() (string, error) {
+	buffer := bytes.NewBuffer(nil)
+	if err := r.Execute(buffer, []string{
+		"get", "kubeconfig-path",
+		"--name", r.Name,
+	}); err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
 }

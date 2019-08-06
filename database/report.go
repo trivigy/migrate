@@ -10,26 +10,28 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/internal/nub"
-	"github.com/trivigy/migrate/internal/require"
-	"github.com/trivigy/migrate/internal/store"
-	"github.com/trivigy/migrate/internal/store/model"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/internal/require"
+	"github.com/trivigy/migrate/v2/internal/store"
+	"github.com/trivigy/migrate/v2/internal/store/model"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 // Report represents the database migration report command object.
 type Report struct {
 	common
-	config map[string]Config
+	config map[string]config.Database
 }
 
 // NewReport initializes a new database report command.
-func NewReport(config map[string]Config) Command {
+func NewReport(config map[string]config.Database) types.Command {
 	return &Report{config: config}
 }
 
 // ReportOptions is used for executing the Run() command.
 type ReportOptions struct {
-	Env    string `json:"env" yaml:"env"`
+	Env string `json:"env" yaml:"env"`
 }
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
@@ -84,12 +86,17 @@ func (r *Report) validation(args []string) error {
 
 // Run is a starting point method for executing the up command.
 func (r *Report) Run(out io.Writer, opts UpOptions) error {
-	config, ok := r.config[opts.Env]
+	cfg, ok := r.config[opts.Env]
 	if !ok {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
 
-	db, err := store.Open(config.Driver.Name(), config.Driver.Source())
+	source, err := cfg.Driver.Source()
+	if err != nil {
+		return err
+	}
+
+	db, err := store.Open(cfg.Driver.Name(), source)
 	if err != nil {
 		return err
 	}
@@ -98,8 +105,8 @@ func (r *Report) Run(out io.Writer, opts UpOptions) error {
 		return err
 	}
 
-	sort.Sort(config.Migrations)
-	sortedRegistryMigrations := config.Migrations
+	sort.Sort(cfg.Migrations)
+	sortedRegistryMigrations := cfg.Migrations
 	sortedDatabaseMigrations, err := db.Migrations.GetMigrationsSorted()
 	if err != nil {
 		return err
@@ -112,7 +119,7 @@ func (r *Report) Run(out io.Writer, opts UpOptions) error {
 	maxSize := max(len(sortedRegistryMigrations), len(sortedDatabaseMigrations))
 
 	for i := 0; i < maxSize; i++ {
-		var rgMig *Migration
+		var rgMig *types.Migration
 		if i < len(sortedRegistryMigrations) {
 			rgMig = &sortedRegistryMigrations[i]
 		}
@@ -125,7 +132,7 @@ func (r *Report) Run(out io.Writer, opts UpOptions) error {
 		if rgMig != nil && dbMig != nil {
 			if rgMig.Tag.String() != dbMig.Tag {
 				return fmt.Errorf(
-					"migration tags mismatch %q != %q\n",
+					"migration tags mismatch %q != %q",
 					rgMig.Tag.String(), dbMig.Tag,
 				)
 			}
@@ -135,7 +142,7 @@ func (r *Report) Run(out io.Writer, opts UpOptions) error {
 		} else if rgMig != nil && dbMig == nil {
 			table.Append([]string{rgMig.Tag.String(), rgMig.Name, "pending"})
 		} else if rgMig == nil && dbMig != nil {
-			return fmt.Errorf("migration tags missing %q\n", dbMig.Tag, )
+			return fmt.Errorf("migration tags missing %q", dbMig.Tag)
 		}
 
 	}

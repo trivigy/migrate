@@ -1,10 +1,10 @@
-package database
+package types
 
 import (
-	"github.com/trivigy/migrate/internal/nub"
+	"io"
 )
 
 // Command represents an abstraction for a command.
 type Command interface {
-	nub.Command
+	Execute(name string, out io.Writer, args []string) error
 }

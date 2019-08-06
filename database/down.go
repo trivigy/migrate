@@ -7,21 +7,23 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/internal/enum"
-	"github.com/trivigy/migrate/internal/nub"
-	"github.com/trivigy/migrate/internal/require"
-	"github.com/trivigy/migrate/internal/store"
-	"github.com/trivigy/migrate/internal/store/model"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/internal/enum"
+	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/internal/require"
+	"github.com/trivigy/migrate/v2/internal/store"
+	"github.com/trivigy/migrate/v2/internal/store/model"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 // Down represents the database migration down command object.
 type Down struct {
 	common
-	config map[string]Config
+	config map[string]config.Database
 }
 
-// NewCreate initializes a new database down command.
-func NewDown(config map[string]Config) Command {
+// NewDown initializes a new database down command.
+func NewDown(config map[string]config.Database) types.Command {
 	return &Down{config: config}
 }
 
@@ -102,17 +104,22 @@ func (r *Down) validation(args []string) error {
 
 // Run is a starting point method for executing the down command.
 func (r *Down) Run(out io.Writer, opts DownOptions) error {
-	config, ok := r.config[opts.Env]
+	cfg, ok := r.config[opts.Env]
 	if !ok {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
 
-	db, err := store.Open(config.Driver.Name(), config.Driver.Source())
+	source, err := cfg.Driver.Source()
 	if err != nil {
 		return err
 	}
 
-	migrationPlan, err := r.GenerateMigrationPlan(db, enum.DirectionDown, config.Migrations)
+	db, err := store.Open(cfg.Driver.Name(), source)
+	if err != nil {
+		return err
+	}
+
+	migrationPlan, err := r.GenerateMigrationPlan(db, enum.DirectionDown, cfg.Migrations)
 	if err != nil {
 		return err
 	}
@@ -145,7 +152,7 @@ func (r *Down) Run(out io.Writer, opts DownOptions) error {
 				Tag: migrationPlan[i].Tag.String(),
 			}); err != nil {
 				return fmt.Errorf(
-					"failed deleting previously applied migration %q (%s)\n",
+					"failed deleting previously applied migration %q (%s)",
 					migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,
 					enum.DirectionDown,
 				)

@@ -14,8 +14,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/internal/nub"
-	"github.com/trivigy/migrate/internal/require"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/internal/require"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 const templateContent = `
@@ -43,11 +45,11 @@ func init() {
 // templates of the database migrations file.
 type Generate struct {
 	common
-	config map[string]Config
+	config map[string]config.Database
 }
 
 // NewGenerate instantiates the generate command and returns it.
-func NewGenerate(config map[string]Config) Command {
+func NewGenerate(config map[string]config.Database) types.Command {
 	return &Generate{config: config}
 }
 
@@ -138,7 +140,7 @@ func (r *Generate) validation(args []string) error {
 
 // Run is a starting point method for executing the generate command.
 func (r *Generate) Run(out io.Writer, opts GenerateOptions) error {
-	config, ok := r.config[opts.Env]
+	cfg, ok := r.config[opts.Env]
 	if !ok {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
@@ -152,9 +154,9 @@ func (r *Generate) Run(out io.Writer, opts GenerateOptions) error {
 		return fmt.Errorf("directory %q not found", opts.Dir)
 	}
 
-	sort.Sort(config.Migrations)
+	sort.Sort(cfg.Migrations)
 	tags := semver.Versions{semver.Version{}}
-	for _, rgMig := range config.Migrations {
+	for _, rgMig := range cfg.Migrations {
 		tags = append(tags, rgMig.Tag)
 	}
 

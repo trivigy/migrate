@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/gorp.v1"
 
-	"github.com/trivigy/migrate/internal/store/model"
+	"github.com/trivigy/migrate/v2/internal/store/model"
 )
 
 const migrationsTableName = "migrations"

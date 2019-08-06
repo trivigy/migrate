@@ -9,9 +9,8 @@ import (
 	"github.com/Pallinder/go-randomdata"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/trivigy/migrate/cluster"
-	"github.com/trivigy/migrate/database"
-	"github.com/trivigy/migrate/driver/docker"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/driver/docker"
 )
 
 type MigrateSuite struct {
@@ -23,16 +22,16 @@ func (r *MigrateSuite) SetupTest() {
 	r.name = "migrate"
 }
 
-func (r *MigrateSuite) TestMigrate_ExecuteWithArgs() {
-	command := NewMigrate(map[string]Config{
+func (r *MigrateSuite) TestMigrate() {
+	command := NewMigrate(map[string]config.Migrate{
 		"default": {
-			Cluster: cluster.Config{
+			Cluster: config.Cluster{
 				// ProjectID:   "digicontract-248304",
 				// Location:    "us-east4-b",
 				// MachineType: "n1-standard-1",
 				// ImageType:   "ubuntu",
 			},
-			Database: database.Config{
+			Database: config.Database{
 				Driver: docker.Postgres{
 					RefName: randomdata.SillyName(),
 					Version: "9.6",

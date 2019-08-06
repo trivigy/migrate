@@ -1,4 +1,4 @@
-package cluster
+package release
 
 import (
 	"bytes"
@@ -10,7 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/trivigy/migrate/internal/testutils"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/internal/testutils"
 )
 
 type GenerateSuite struct {
@@ -22,8 +23,8 @@ func (r *GenerateSuite) SetupTest() {
 	r.name = "generate"
 }
 
-func (r *GenerateSuite) TestGenerate() {
-	defaultConfig := map[string]Config{"default": {}}
+func (r *GenerateSuite) TestGenerateCommand() {
+	defaultConfig := map[string]config.Cluster{"default": {}}
 
 	dir, err := ioutil.TempDir(os.TempDir(), "migrate-")
 	if err != nil {
@@ -34,7 +35,7 @@ func (r *GenerateSuite) TestGenerate() {
 	testCases := []struct {
 		shouldFail bool
 		onFail     string
-		config     map[string]Config
+		config     map[string]config.Cluster
 		buffer     *bytes.Buffer
 		args       []string
 	}{
@@ -46,7 +47,7 @@ func (r *GenerateSuite) TestGenerate() {
 		},
 		{
 			true, "Error: missing \"default\" environment configuration\n",
-			map[string]Config{},
+			map[string]config.Cluster{},
 			bytes.NewBuffer(nil),
 			[]string{"example"},
 		},

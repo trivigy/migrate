@@ -7,17 +7,19 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/internal/nub"
-	"github.com/trivigy/migrate/internal/require"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/internal/require"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 // Destroy represents the cluster destroy command.
 type Destroy struct {
-	config map[string]Config
+	config map[string]config.Cluster
 }
 
 // NewDestroy instantiates and returns a destroy command object.
-func NewDestroy(config map[string]Config) Command {
+func NewDestroy(config map[string]config.Cluster) types.Command {
 	return &Destroy{config: config}
 }
 
@@ -29,7 +31,7 @@ type DestroyOptions struct {
 // NewCommand returns a new cobra.Command destroy command object.
 func (r *Destroy) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "destroy",
+		Use:   name,
 		Short: "blah blah blah destroy.",
 		Long:  "blah blah blah destroy",
 		Args:  require.Args(r.validation),
@@ -77,12 +79,12 @@ func (r *Destroy) validation(args []string) error {
 
 // Run is a starting point method for executing the destroy command.
 func (r *Destroy) Run(out io.Writer, opts CreateOptions) error {
-	config, ok := r.config[opts.Env]
+	cfg, ok := r.config[opts.Env]
 	if !ok {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
 
-	if err := config.Driver.TearDown(out); err != nil {
+	if err := cfg.Driver.TearDown(out); err != nil {
 		return err
 	}
 	return nil
@@ -126,7 +128,7 @@ func (r *Destroy) Run(out io.Writer, opts CreateOptions) error {
 //
 // func destroyCluster(
 // 	client *container.ClusterManagerClient,
-// 	config Config,
+// 	config Cluster,
 // 	clusterName string,
 // ) error {
 // 	req := &containerpb.DeleteClusterRequest{

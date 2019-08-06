@@ -10,7 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/trivigy/migrate/internal/testutils"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/internal/testutils"
 )
 
 type GenerateSuite struct {
@@ -23,7 +24,7 @@ func (r *GenerateSuite) SetupTest() {
 }
 
 func (r *GenerateSuite) TestGenerateCommand() {
-	defaultConfig := map[string]Config{"default": {}}
+	defaultConfig := map[string]config.Database{"default": {}}
 
 	dir, err := ioutil.TempDir(os.TempDir(), "migrate-")
 	if err != nil {
@@ -34,7 +35,7 @@ func (r *GenerateSuite) TestGenerateCommand() {
 	testCases := []struct {
 		shouldFail bool
 		onFail     string
-		config     map[string]Config
+		config     map[string]config.Database
 		buffer     *bytes.Buffer
 		args       []string
 	}{
@@ -46,7 +47,7 @@ func (r *GenerateSuite) TestGenerateCommand() {
 		},
 		{
 			true, "Error: missing \"default\" environment configuration\n",
-			map[string]Config{},
+			map[string]config.Database{},
 			bytes.NewBuffer(nil),
 			[]string{"example"},
 		},

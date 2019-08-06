@@ -8,7 +8,8 @@ import (
 	"github.com/Pallinder/go-randomdata"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/trivigy/migrate/driver/docker"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/driver/docker"
 )
 
 type DatabaseSuite struct {
@@ -20,8 +21,8 @@ func (r *DatabaseSuite) SetupTest() {
 	r.name = "database"
 }
 
-func (r *DatabaseSuite) TestRootCommand() {
-	command := NewDatabase(map[string]Config{
+func (r *DatabaseSuite) TestDatabaseCommand() {
+	command := NewDatabase(map[string]config.Database{
 		"default": {
 			Driver: docker.Postgres{
 				RefName: randomdata.SillyName(),

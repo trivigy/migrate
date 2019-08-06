@@ -13,11 +13,12 @@ type Driver interface {
 // Cluster defines the interface for a cluster driver.
 type Cluster interface {
 	Driver
+	KubeConfig() (string, error)
 }
 
 // Database defines the interface for a database driver.
 type Database interface {
 	Driver
 	Name() string
-	Source() string
+	Source() (string, error)
 }

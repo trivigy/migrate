@@ -1,4 +1,4 @@
-package database
+package types
 
 // Migrations represents multiple database migrations.
 type Migrations []Migration

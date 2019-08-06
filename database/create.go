@@ -7,18 +7,20 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/internal/nub"
-	"github.com/trivigy/migrate/internal/require"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/internal/require"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 // Create represents the database create command object.
 type Create struct {
 	common
-	config map[string]Config
+	config map[string]config.Database
 }
 
 // NewCreate initializes a new database create command.
-func NewCreate(config map[string]Config) Command {
+func NewCreate(config map[string]config.Database) types.Command {
 	return &Create{config: config}
 }
 
@@ -79,12 +81,12 @@ func (r *Create) validation(args []string) error {
 
 // Run is a starting point method for executing the create command.
 func (r *Create) Run(out io.Writer, opts CreateOptions) error {
-	config, ok := r.config[opts.Env]
+	cfg, ok := r.config[opts.Env]
 	if !ok {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
 
-	if err := config.Driver.Setup(out); err != nil {
+	if err := cfg.Driver.Setup(out); err != nil {
 		return err
 	}
 	return nil

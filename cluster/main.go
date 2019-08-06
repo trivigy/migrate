@@ -9,7 +9,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/internal/nub"
+	"github.com/trivigy/migrate/v2/cluster/release"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 const namespace = "cluster"
@@ -22,11 +25,11 @@ func Path(name string, tag string) string {
 }
 
 // Filter iterates over all registered cluster migrations.
-func Filter(fn func(migration Migration)) nub.RangeFunc {
+func Filter(fn func(release types.Release)) types.RangeFunc {
 	return func(key, value interface{}) bool {
 		fullname := strings.Split(key.(string), "/")
 		if fullname[0] == namespace {
-			fn(value.(Migration))
+			fn(value.(types.Release))
 		}
 		return true
 	}
@@ -34,19 +37,19 @@ func Filter(fn func(migration Migration)) nub.RangeFunc {
 
 // Collect iterates over all regirstered cluster migrations and adds them to
 // the specified migration.
-func Collect(migrations *Migrations) nub.RangeFunc {
-	return Filter(func(migration Migration) {
-		*migrations = append(*migrations, migration)
+func Collect(releases *types.Releases) types.RangeFunc {
+	return Filter(func(release types.Release) {
+		*releases = append(*releases, release)
 	})
 }
 
 // Cluster represents a cluster root command.
 type Cluster struct {
-	config map[string]Config
+	config map[string]config.Cluster
 }
 
 // NewCluster instantiates a new cluster command and returns it.
-func NewCluster(config map[string]Config) Command {
+func NewCluster(config map[string]config.Cluster) types.Command {
 	return &Cluster{config: config}
 }
 
@@ -54,16 +57,16 @@ func NewCluster(config map[string]Config) Command {
 func (r *Cluster) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          name,
-		Short:        "Clusters migration tool.",
-		Long:         "Clusters migration tool",
+		Short:        "Kubernetes cluster release and deployment controller.",
+		Long:         "Kubernetes cluster release and deployment controller",
 		SilenceUsage: true,
 	}
 
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	cmd.AddCommand(
-		NewGenerate(r.config).(*Generate).NewCommand("generate"),
 		NewCreate(r.config).(*Create).NewCommand("create"),
 		NewDestroy(r.config).(*Destroy).NewCommand("destroy"),
+		release.NewRelease(r.config).(*release.Release).NewCommand("release"),
 	)
 
 	pflags := cmd.PersistentFlags()
@@ -89,26 +92,26 @@ func (r *Cluster) Execute(name string, output io.Writer, args []string) error {
 	return nil
 }
 
-// func buildClusterCommandConfig(cmd *cobra.Command, config *viper.Viper) (Config, string, error) {
+// func buildClusterCommandConfig(cmd *cobra.Command, config *viper.Viper) (Cluster, string, error) {
 // 	environment, err := cmd.Flags().GetString("env")
 // 	if err != nil {
-// 		return Config{}, "", errors.WithStack(err)
+// 		return Cluster{}, "", errors.WithStack(err)
 // 	}
 //
 // 	subtree := config.Sub(environment + ".cluster")
 // 	if subtree == nil {
-// 		return Config{}, "", errors.Errorf("missing %q configurations", environment)
+// 		return Cluster{}, "", errors.Errorf("missing %q configurations", environment)
 // 	}
 //
-// 	cfg := Config{}
+// 	cfg := Cluster{}
 // 	if err := cfg.UnmarshalMap(subtree.AllSettings()); err != nil {
-// 		return Config{}, "", errors.WithStack(err)
+// 		return Cluster{}, "", errors.WithStack(err)
 // 	}
 //
 // 	if environment == nub.DefaultEnvironment {
 // 		environment, err = getCurrentBranchName()
 // 		if err != nil {
-// 			return Config{}, "", err
+// 			return Cluster{}, "", err
 // 		}
 // 	}
 //
@@ -118,7 +121,7 @@ func (r *Cluster) Execute(name string, output io.Writer, args []string) error {
 //
 // func NewKubeCtl(
 // 	gcloud *container.ClusterManagerClient,
-// 	config Config,
+// 	config Cluster,
 // 	clusterName string,
 // ) (*kubernetes.Clientset, error) {
 // 	req := &containerpb.GetClusterRequest{
@@ -134,7 +137,7 @@ func (r *Cluster) Execute(name string, output io.Writer, args []string) error {
 // 		return nil, errors.WithStack(err)
 // 	}
 //
-// 	kubeConfig := &rest.Config{
+// 	kubeConfig := &rest.Cluster{
 // 		Host: "https://" + resp.Endpoint,
 // 		TLSClientConfig: rest.TLSClientConfig{
 // 			Insecure: false,
