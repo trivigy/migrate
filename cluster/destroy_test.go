@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/Pallinder/go-randomdata"
@@ -25,7 +26,7 @@ func (r *DestroySuite) TestDestroyCommand() {
 	cfg := map[string]config.Cluster{
 		"default": {
 			Driver: provider.Kind{
-				Name: randomdata.SillyName(),
+				Name: strings.ToLower(randomdata.SillyName()),
 			},
 		},
 	}

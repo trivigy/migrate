@@ -7,6 +7,7 @@ import (
 
 // Cluster represents a configurations object of a cluster migration.
 type Cluster struct {
-	Releases types.Releases `json:"releases" yaml:"releases"`
-	Driver   driver.Cluster `json:"driver" yaml:"driver"`
+	Namespace string         `json:"namespace" yaml:"namespace"`
+	Releases  types.Releases `json:"releases" yaml:"releases"`
+	Driver    driver.Cluster `json:"driver" yaml:"driver"`
 }

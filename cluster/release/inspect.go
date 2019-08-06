@@ -44,6 +44,7 @@ func (r *Inspect) NewCommand(name string) *cobra.Command {
 			opts := InspectOptions{Env: env}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
+		SilenceUsage: true,
 	}
 
 	pflags := cmd.PersistentFlags()

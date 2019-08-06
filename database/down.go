@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/trivigy/migrate/v2/config"
-	"github.com/trivigy/migrate/v2/internal/enum"
 	"github.com/trivigy/migrate/v2/internal/nub"
 	"github.com/trivigy/migrate/v2/internal/require"
 	"github.com/trivigy/migrate/v2/internal/store"
@@ -119,7 +118,7 @@ func (r *Down) Run(out io.Writer, opts DownOptions) error {
 		return err
 	}
 
-	migrationPlan, err := r.GenerateMigrationPlan(db, enum.DirectionDown, cfg.Migrations)
+	migrationPlan, err := r.GenerateMigrationPlan(db, types.DirectionDown, cfg.Migrations)
 	if err != nil {
 		return err
 	}
@@ -133,7 +132,7 @@ func (r *Down) Run(out io.Writer, opts DownOptions) error {
 		for i := 0; i < steps; i++ {
 			fmt.Fprintf(out, "==> migration %q (%s)\n",
 				migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,
-				enum.DirectionDown,
+				types.DirectionDown,
 			)
 			for _, op := range migrationPlan[i].Down {
 				fmt.Fprintf(out, "%s;\n", op.Query)
@@ -142,7 +141,7 @@ func (r *Down) Run(out io.Writer, opts DownOptions) error {
 	} else {
 		for i := 0; i < steps; i++ {
 			for _, op := range migrationPlan[i].Down {
-				err := op.Execute(db, migrationPlan[i], enum.DirectionDown)
+				err := op.Execute(db, migrationPlan[i], types.DirectionDown)
 				if err != nil {
 					return err
 				}
@@ -154,13 +153,13 @@ func (r *Down) Run(out io.Writer, opts DownOptions) error {
 				return fmt.Errorf(
 					"failed deleting previously applied migration %q (%s)",
 					migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,
-					enum.DirectionDown,
+					types.DirectionDown,
 				)
 			}
 
 			fmt.Fprintf(out, "migration %q successfully removed (%s)\n",
 				migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,
-				enum.DirectionDown,
+				types.DirectionDown,
 			)
 		}
 	}

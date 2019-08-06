@@ -3,9 +3,16 @@ package release
 import (
 	"fmt"
 	"io"
+	"sort"
+	"strconv"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	v1apps "k8s.io/api/apps/v1"
+	v1core "k8s.io/api/core/v1"
+	v1err "k8s.io/apimachinery/pkg/api/errors"
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/trivigy/migrate/v2/config"
 	"github.com/trivigy/migrate/v2/internal/nub"
@@ -15,6 +22,7 @@ import (
 
 // List represents the cluster release list command object.
 type List struct {
+	common
 	config map[string]config.Cluster
 }
 
@@ -44,6 +52,7 @@ func (r *List) NewCommand(name string) *cobra.Command {
 			opts := ListOptions{Env: env}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
+		SilenceUsage: true,
 	}
 
 	pflags := cmd.PersistentFlags()
@@ -84,8 +93,66 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
 
-	if err := cfg.Driver.Setup(out); err != nil {
+	kubectl, err := r.GetKubeCtl(cfg)
+	if err != nil {
 		return err
 	}
+
+	table := tablewriter.NewWriter(out)
+	table.SetHeader([]string{"#", "Name", "Version", "Manifest", "Kind", "Status"})
+	table.SetColWidth(60)
+
+	sort.Sort(cfg.Releases)
+	for i, rel := range cfg.Releases {
+		for j, manifest := range rel.Manifests {
+			var name string
+			var kind string
+			var status string
+			switch manifest := manifest.(type) {
+			case *v1core.Service:
+				name = manifest.Name
+				kind = manifest.Kind
+				service, err := kubectl.CoreV1().
+					Services(cfg.Namespace).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+				status = service.Status.String()
+			case *v1apps.Deployment:
+				name = manifest.Name
+				kind = manifest.Kind
+				deployment, err := kubectl.AppsV1().
+					Deployments(cfg.Namespace).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+				status = deployment.Status.String()
+			default:
+				return fmt.Errorf("unsupported manifest type %T", manifest)
+			}
+
+			if j == 0 {
+				table.Append([]string{
+					strconv.Itoa(i + 1),
+					rel.Name,
+					rel.Version.String(),
+					name,
+					kind,
+					status,
+				})
+			} else {
+				table.Append([]string{"", "", "", name, kind, status})
+			}
+		}
+	}
+	table.Render()
 	return nil
 }

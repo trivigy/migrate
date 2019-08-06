@@ -3,7 +3,7 @@ package database
 import (
 	"bytes"
 	"fmt"
-	"os"
+	"strings"
 	"testing"
 
 	"github.com/Pallinder/go-randomdata"
@@ -13,7 +13,6 @@ import (
 
 	"github.com/trivigy/migrate/v2/config"
 	"github.com/trivigy/migrate/v2/driver/docker"
-	"github.com/trivigy/migrate/v2/driver/provider"
 	"github.com/trivigy/migrate/v2/types"
 )
 
@@ -51,29 +50,16 @@ func (r *UpSuite) TestUpCommand() {
 		},
 	}
 
-	defaultConfig := map[string]config.Database{}
-	if os.Getenv("CI") != "true" {
-		defaultConfig = map[string]config.Database{
-			"default": {
-				Migrations: migrations,
-				Driver: docker.Postgres{
-					RefName: randomdata.SillyName(),
-					Version: "9.6",
-					DBName:  "unittest",
-					User:    "postgres",
-				},
+	defaultConfig := map[string]config.Database{
+		"default": {
+			Migrations: migrations,
+			Driver: docker.Postgres{
+				RefName: strings.ToLower(randomdata.SillyName()),
+				Version: "9.6",
+				DBName:  "unittest",
+				User:    "postgres",
 			},
-		}
-	} else {
-		defaultConfig = map[string]config.Database{
-			"default": {
-				Migrations: migrations,
-				Driver: provider.SQL{
-					Dialect:    "postgres",
-					DataSource: "host=localhost user=postgres dbname=unittest sslmode=disable",
-				},
-			},
-		}
+		},
 	}
 
 	create := NewCreate(defaultConfig)

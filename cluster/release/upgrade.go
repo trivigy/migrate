@@ -44,6 +44,7 @@ func (r *Upgrade) NewCommand(name string) *cobra.Command {
 			opts := UpgradeOptions{Env: env}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
+		SilenceUsage: true,
 	}
 
 	pflags := cmd.PersistentFlags()

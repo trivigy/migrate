@@ -10,5 +10,5 @@ type Release struct {
 	Name      string         `json:"name" yaml:"name"`
 	Version   semver.Version `json:"tag" yaml:"tag"`
 	Values    interface{}    `json:"values" yaml:"values"`
-	Menifests []interface{}  `json:"menifests" yaml:"menifests"`
+	Manifests []interface{}  `json:"manifests" yaml:"manifests"`
 }

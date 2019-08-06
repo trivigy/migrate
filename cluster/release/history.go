@@ -44,6 +44,7 @@ func (r *History) NewCommand(name string) *cobra.Command {
 			opts := HistoryOptions{Env: env}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
+		SilenceUsage: true,
 	}
 
 	pflags := cmd.PersistentFlags()

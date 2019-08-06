@@ -16,8 +16,8 @@ import (
 	// postgres driver
 	_ "github.com/lib/pq"
 
-	"github.com/trivigy/migrate/v2/internal/nub"
 	"github.com/trivigy/migrate/v2/internal/retry"
+	types2 "github.com/trivigy/migrate/v2/types"
 )
 
 // Postgres represents a driver for a docker based postgres database.
@@ -111,14 +111,13 @@ func (r Postgres) Setup(out io.Writer) error {
 	}
 
 	address := info.NetworkSettings.IPAddress
-	url := nub.PsqlDSN{Host: address, User: "postgres"}
+	url := types2.PsqlDSN{Host: address, User: "postgres"}
 	db, err := sql.Open(url.Driver(), url.Source())
 	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctx = context.Background()
 	if err := retry.Do(ctx, 2*time.Second, func() (bool, error) {
 		err := db.Ping()
 		if err == nil {
@@ -173,8 +172,7 @@ func (r Postgres) TearDown(out io.Writer) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctx = context.Background()
 	if err := docker.ContainerKill(ctx, containers[0].ID, "KILL"); err != nil {
 		return err
 	}
@@ -217,7 +215,7 @@ func (r Postgres) Source() (string, error) {
 	}
 
 	address := info.NetworkSettings.IPAddress
-	url := nub.PsqlDSN{Host: address}
+	url := types2.PsqlDSN{Host: address}
 	if r.Password != "" {
 		url.Password = r.Password
 	}

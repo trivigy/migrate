@@ -6,7 +6,6 @@ import (
 
 	"gopkg.in/gorp.v1"
 
-	"github.com/trivigy/migrate/v2/internal/enum"
 	"github.com/trivigy/migrate/v2/internal/store"
 )
 
@@ -17,7 +16,7 @@ type Operation struct {
 }
 
 // Execute runs the query operation on the database.
-func (r Operation) Execute(db *store.Context, migration Migration, d enum.Direction) error {
+func (r Operation) Execute(db *store.Context, migration Migration, d Direction) error {
 	var err error
 	var executor Executor
 

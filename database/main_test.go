@@ -3,6 +3,7 @@ package database
 import (
 	"bytes"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/Pallinder/go-randomdata"
@@ -25,7 +26,7 @@ func (r *DatabaseSuite) TestDatabaseCommand() {
 	command := NewDatabase(map[string]config.Database{
 		"default": {
 			Driver: docker.Postgres{
-				RefName: randomdata.SillyName(),
+				RefName: strings.ToLower(randomdata.SillyName()),
 				Version: "9.6",
 				DBName:  "unittest",
 				User:    "postgres",

@@ -2,7 +2,7 @@ package database
 
 import (
 	"bytes"
-	"os"
+	"strings"
 	"testing"
 
 	"github.com/Pallinder/go-randomdata"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/trivigy/migrate/v2/config"
 	"github.com/trivigy/migrate/v2/driver/docker"
-	"github.com/trivigy/migrate/v2/driver/provider"
 )
 
 type CreateSuite struct {
@@ -24,27 +23,15 @@ func (r *CreateSuite) SetupTest() {
 }
 
 func (r *CreateSuite) TestCreateCommand() {
-	cfg := map[string]config.Database{}
-	if os.Getenv("CI") != "true" {
-		cfg = map[string]config.Database{
-			"default": {
-				Driver: docker.Postgres{
-					RefName: randomdata.SillyName(),
-					Version: "9.6",
-					DBName:  "unittest",
-					User:    "postgres",
-				},
+	cfg := map[string]config.Database{
+		"default": {
+			Driver: docker.Postgres{
+				RefName: strings.ToLower(randomdata.SillyName()),
+				Version: "9.6",
+				DBName:  "unittest",
+				User:    "postgres",
 			},
-		}
-	} else {
-		cfg = map[string]config.Database{
-			"default": {
-				Driver: provider.SQL{
-					Dialect:    "postgres",
-					DataSource: "host=localhost user=postgres dbname=unittest sslmode=disable",
-				},
-			},
-		}
+		},
 	}
 
 	buffer := bytes.NewBuffer(nil)
