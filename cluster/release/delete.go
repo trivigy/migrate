@@ -1,4 +1,4 @@
-package cluster
+package release
 
 import (
 	"fmt"
@@ -13,23 +13,23 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-// Create represents the cluster create command object.
-type Create struct {
+// Delete represents the cluster release delete command object.
+type Delete struct {
 	config map[string]config.Cluster
 }
 
-// NewCreate initializes a new cluster create command.
-func NewCreate(config map[string]config.Cluster) types.Command {
-	return &Create{config: config}
+// NewDelete initializes a new cluster release delete command.
+func NewDelete(config map[string]config.Cluster) types.Command {
+	return &Delete{config: config}
 }
 
-// CreateOptions is used for executing the Run() command.
-type CreateOptions struct {
+// DeleteOptions is used for executing the Run() command.
+type DeleteOptions struct {
 	Env string `json:"env" yaml:"env"`
 }
 
-// NewCommand creates a new cobra.Command, configures it and returns it.
-func (r *Create) NewCommand(name string) *cobra.Command {
+// NewCommand creates a new cobra.Command, configures it, and returns it.
+func (r *Delete) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
 		Short: "blah blah blah create.",
@@ -41,7 +41,7 @@ func (r *Create) NewCommand(name string) *cobra.Command {
 				return errors.WithStack(err)
 			}
 
-			opts := CreateOptions{Env: env}
+			opts := DeleteOptions{Env: env}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
 	}
@@ -59,7 +59,7 @@ func (r *Create) NewCommand(name string) *cobra.Command {
 }
 
 // Execute runs the command.
-func (r *Create) Execute(name string, out io.Writer, args []string) error {
+func (r *Delete) Execute(name string, out io.Writer, args []string) error {
 	cmd := r.NewCommand(name)
 	cmd.SetOut(out)
 	cmd.SetArgs(args)
@@ -70,15 +70,16 @@ func (r *Create) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r *Create) validation(args []string) error {
+func (r *Delete) validation(args []string) error {
 	if err := require.NoArgs(args); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Run is a starting point method for executing the create command.
-func (r *Create) Run(out io.Writer, opts CreateOptions) error {
+// Run is a starting point method for executing the cluster release delete
+// command.
+func (r *Delete) Run(out io.Writer, opts DeleteOptions) error {
 	cfg, ok := r.config[opts.Env]
 	if !ok {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)

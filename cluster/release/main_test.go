@@ -1,4 +1,4 @@
-package cluster
+package release
 
 import (
 	"testing"
@@ -6,17 +6,17 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type ClusterSuite struct {
+type ReleaseSuite struct {
 	suite.Suite
 	name string
 }
 
-func (r *ClusterSuite) SetupTest() {
-	r.name = "cluster"
+func (r *ReleaseSuite) SetupTest() {
+	r.name = "release"
 }
 
-func (r *ClusterSuite) TestClusterCommand() {
-	// command := NewCluster(map[string]config.Cluster{"default": {}})
+func (r *ReleaseSuite) TestReleaseCommand() {
+	// command := NewCluster(map[string]Config{"default": {}})
 	//
 	// buffer := bytes.NewBuffer(nil)
 	// if err := command.Execute(r.name, buffer, []string{"--help"}); err != nil {
@@ -51,6 +51,6 @@ func (r *ClusterSuite) TestClusterCommand() {
 	// assert.Nil(r.T(), err)
 }
 
-func TestClusterSuite(t *testing.T) {
-	suite.Run(t, new(ClusterSuite))
+func TestReleaseSuite(t *testing.T) {
+	suite.Run(t, new(ReleaseSuite))
 }

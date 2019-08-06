@@ -9,7 +9,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/internal/nub"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 const namespace = "database"
@@ -22,11 +24,11 @@ func Path(name string, tag string) string {
 }
 
 // Filter iterates over all registered database migrations.
-func Filter(fn func(migration Migration)) nub.RangeFunc {
+func Filter(fn func(migration types.Migration)) types.RangeFunc {
 	return func(key, value interface{}) bool {
 		fullname := strings.Split(key.(string), "/")
 		if fullname[0] == namespace {
-			fn(value.(Migration))
+			fn(value.(types.Migration))
 		}
 		return true
 	}
@@ -34,19 +36,19 @@ func Filter(fn func(migration Migration)) nub.RangeFunc {
 
 // Collect iterates over all regirstered cluster migrations and adds them to
 // the specified migration.
-func Collect(migrations *Migrations) nub.RangeFunc {
-	return Filter(func(migration Migration) {
+func Collect(migrations *types.Migrations) types.RangeFunc {
+	return Filter(func(migration types.Migration) {
 		*migrations = append(*migrations, migration)
 	})
 }
 
 // Database represents a database root command.
 type Database struct {
-	config map[string]Config
+	config map[string]config.Database
 }
 
 // NewDatabase instantiates a new database command and returns it.
-func NewDatabase(config map[string]Config) Command {
+func NewDatabase(config map[string]config.Database) types.Command {
 	return &Database{config: config}
 }
 
@@ -54,8 +56,8 @@ func NewDatabase(config map[string]Config) Command {
 func (r *Database) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          name,
-		Short:        "blah blah blah database.",
-		Long:         "blah blah blah database",
+		Short:        "SQL database deployment and migrations management tool.",
+		Long:         "SQL database deployment and migrations management tool",
 		SilenceUsage: true,
 	}
 

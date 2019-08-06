@@ -7,9 +7,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/cluster"
-	"github.com/trivigy/migrate/database"
-	"github.com/trivigy/migrate/internal/nub"
+	"github.com/trivigy/migrate/v2/cluster"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/database"
+	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 // Registry is the container holding registered migrations.
@@ -17,38 +19,37 @@ var Registry sync.Map
 
 // Migrate represents the migrate command object.
 type Migrate struct {
-	config map[string]Config
+	config map[string]config.Migrate
 }
 
 // NewMigrate instantiates a new migrate object and returns it.
-func NewMigrate(config map[string]Config) Command {
+func NewMigrate(config map[string]config.Migrate) types.Command {
 	return &Migrate{config: config}
 }
 
 // NewCommand returns a new cobra.Command object.
 func (r *Migrate) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
+		Version:      "2.0.0",
 		Use:          name,
-		Long:         "Devops and migrations management toolset",
+		Long:         "Kubernetes cluster releases and migrations administration toolset",
 		SilenceUsage: true,
 	}
 
-	clusterConfig := make(map[string]cluster.Config)
+	clusterConfig := make(map[string]config.Cluster)
 	for key, value := range r.config {
 		clusterConfig[key] = value.Cluster
 	}
-	Cluster := cluster.NewCluster(clusterConfig).(*cluster.Cluster)
 
-	databaseConfig := make(map[string]database.Config)
+	databaseConfig := make(map[string]config.Database)
 	for key, value := range r.config {
 		databaseConfig[key] = value.Database
 	}
-	Database := database.NewDatabase(databaseConfig).(*database.Database)
 
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	cmd.AddCommand(
-		Cluster.NewCommand("cluster"),
-		Database.NewCommand("database"),
+		cluster.NewCluster(clusterConfig).(*cluster.Cluster).NewCommand("cluster"),
+		database.NewDatabase(databaseConfig).(*database.Database).NewCommand("database"),
 	)
 
 	pflags := cmd.PersistentFlags()

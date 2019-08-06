@@ -1,4 +1,4 @@
-package cluster
+package release
 
 import (
 	"fmt"
@@ -14,8 +14,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/internal/nub"
-	"github.com/trivigy/migrate/internal/require"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/internal/require"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 const templateContent = `
@@ -42,11 +44,11 @@ func init() {
 // Generate represents the generate command which allows for generating new
 // templates of the cluster migrations file.
 type Generate struct {
-	config map[string]Config
+	config map[string]config.Cluster
 }
 
-// NewGenerate instantiates the generate command and returns it.
-func NewGenerate(config map[string]Config) Command {
+// NewGenerate instantiates the cluster release generate command.
+func NewGenerate(config map[string]config.Cluster) types.Command {
 	return &Generate{config: config}
 }
 
@@ -137,7 +139,7 @@ func (r *Generate) validation(args []string) error {
 
 // Run is a starting point method for executing the generate command.
 func (r *Generate) Run(out io.Writer, opts GenerateOptions) error {
-	config, ok := r.config[opts.Env]
+	cfg, ok := r.config[opts.Env]
 	if !ok {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
@@ -151,10 +153,10 @@ func (r *Generate) Run(out io.Writer, opts GenerateOptions) error {
 		return fmt.Errorf("directory %q not found", opts.Dir)
 	}
 
-	sort.Sort(config.Migrations)
+	sort.Sort(cfg.Releases)
 	tags := semver.Versions{semver.Version{}}
-	for _, rgMig := range config.Migrations {
-		tags = append(tags, rgMig.Tag)
+	for _, rgMig := range cfg.Releases {
+		tags = append(tags, rgMig.Version)
 	}
 
 	if opts.Tag == "" {

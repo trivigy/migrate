@@ -1,4 +1,4 @@
-package database
+package types
 
 import (
 	"database/sql"
@@ -6,8 +6,8 @@ import (
 
 	"gopkg.in/gorp.v1"
 
-	"github.com/trivigy/migrate/internal/enum"
-	"github.com/trivigy/migrate/internal/store"
+	"github.com/trivigy/migrate/v2/internal/enum"
+	"github.com/trivigy/migrate/v2/internal/store"
 )
 
 // Operation defines a single query operation to run on the database.

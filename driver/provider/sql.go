@@ -6,17 +6,17 @@ import (
 	"io"
 	"time"
 
-	"github.com/trivigy/migrate/internal/retry"
+	"github.com/trivigy/migrate/v2/internal/retry"
 )
 
-// SQLDatabase represents an abstract remote sql database driver.
-type SQLDatabase struct {
+// SQL represents an abstract remote sql database driver.
+type SQL struct {
 	Dialect    string `json:"dialect" yaml:"dialect"`
 	DataSource string `json:"dataSource" yaml:"dataSource"`
 }
 
 // Setup executes the resource creation process.
-func (r SQLDatabase) Setup(out io.Writer) error {
+func (r SQL) Setup(out io.Writer) error {
 	db, err := sql.Open(r.Dialect, r.DataSource)
 	if err != nil {
 		return err
@@ -41,14 +41,16 @@ func (r SQLDatabase) Setup(out io.Writer) error {
 }
 
 // TearDown executes the resource destruction process.
-func (r SQLDatabase) TearDown(out io.Writer) error {
+func (r SQL) TearDown(out io.Writer) error {
 	return nil
 }
 
-func (r SQLDatabase) Name() string {
+// Name returns the driver name.
+func (r SQL) Name() string {
 	return r.Dialect
 }
 
-func (r SQLDatabase) Source() string {
-	return r.DataSource
+// Source returns the data source name for the driver.
+func (r SQL) Source() (string, error) {
+	return r.DataSource, nil
 }

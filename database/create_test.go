@@ -9,8 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/trivigy/migrate/driver/docker"
-	"github.com/trivigy/migrate/driver/provider"
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/driver/docker"
+	"github.com/trivigy/migrate/v2/driver/provider"
 )
 
 type CreateSuite struct {
@@ -23,9 +24,9 @@ func (r *CreateSuite) SetupTest() {
 }
 
 func (r *CreateSuite) TestCreateCommand() {
-	config := map[string]Config{}
+	cfg := map[string]config.Database{}
 	if os.Getenv("CI") != "true" {
-		config = map[string]Config{
+		cfg = map[string]config.Database{
 			"default": {
 				Driver: docker.Postgres{
 					RefName: randomdata.SillyName(),
@@ -36,9 +37,9 @@ func (r *CreateSuite) TestCreateCommand() {
 			},
 		}
 	} else {
-		config = map[string]Config{
+		cfg = map[string]config.Database{
 			"default": {
-				Driver: provider.SQLDatabase{
+				Driver: provider.SQL{
 					Dialect:    "postgres",
 					DataSource: "host=localhost user=postgres dbname=unittest sslmode=disable",
 				},
@@ -47,8 +48,8 @@ func (r *CreateSuite) TestCreateCommand() {
 	}
 
 	buffer := bytes.NewBuffer(nil)
-	assert.Nil(r.T(), NewCreate(config).Execute(r.name, buffer, []string{}))
-	assert.Nil(r.T(), NewDestroy(config).Execute(r.name, buffer, []string{}))
+	assert.Nil(r.T(), NewCreate(cfg).Execute(r.name, buffer, []string{}))
+	assert.Nil(r.T(), NewDestroy(cfg).Execute(r.name, buffer, []string{}))
 }
 
 func TestCreateSuite(t *testing.T) {

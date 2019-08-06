@@ -5,9 +5,10 @@ import (
 	"os"
 	"sort"
 
-	"github.com/trivigy/migrate/internal/enum"
-	"github.com/trivigy/migrate/internal/store"
-	"github.com/trivigy/migrate/internal/store/model"
+	"github.com/trivigy/migrate/v2/internal/enum"
+	"github.com/trivigy/migrate/v2/internal/store"
+	"github.com/trivigy/migrate/v2/internal/store/model"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 // common defines some shared methods used by database commands.
@@ -18,8 +19,8 @@ type common struct{}
 func (r common) GenerateMigrationPlan(
 	db *store.Context,
 	direction enum.Direction,
-	migrations Migrations,
-) ([]Migration, error) {
+	migrations types.Migrations,
+) ([]types.Migration, error) {
 	if err := db.Migrations.CreateTableIfNotExists(); err != nil {
 		return nil, err
 	}
@@ -35,7 +36,7 @@ func (r common) GenerateMigrationPlan(
 	i := 0
 	maxSize := max(len(sortedRegistryMigrations), len(sortedDatabaseMigrations))
 	for ; i < maxSize; i++ {
-		var rgMig *Migration
+		var rgMig *types.Migration
 		if i < len(sortedRegistryMigrations) {
 			rgMig = &sortedRegistryMigrations[i]
 		}
@@ -48,7 +49,7 @@ func (r common) GenerateMigrationPlan(
 		if rgMig != nil && dbMig != nil {
 			if rgMig.Tag.String() != dbMig.Tag {
 				return nil, fmt.Errorf(
-					"error: migration tags mismatch %q != %q\n",
+					"migration tags mismatch %q != %q",
 					rgMig.Tag.String(), dbMig.Tag,
 				)
 			}
@@ -61,11 +62,11 @@ func (r common) GenerateMigrationPlan(
 				break
 			}
 		} else if rgMig == nil && dbMig != nil {
-			return nil, fmt.Errorf("migration tags missing %q\n", dbMig.Tag)
+			return nil, fmt.Errorf("migration tags missing %q", dbMig.Tag)
 		}
 	}
 
-	plan := make([]Migration, 0)
+	plan := make([]types.Migration, 0)
 	if direction == enum.DirectionUp {
 		for j := i; j < len(sortedRegistryMigrations); j++ {
 			plan = append(plan, sortedRegistryMigrations[j])

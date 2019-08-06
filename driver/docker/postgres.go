@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"io"
 	"time"
 
@@ -15,8 +16,8 @@ import (
 	// postgres driver
 	_ "github.com/lib/pq"
 
-	"github.com/trivigy/migrate/internal/nub"
-	"github.com/trivigy/migrate/internal/retry"
+	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/internal/retry"
 )
 
 // Postgres represents a driver for a docker based postgres database.
@@ -180,17 +181,19 @@ func (r Postgres) TearDown(out io.Writer) error {
 	return nil
 }
 
+// Name returns the driver name.
 func (r Postgres) Name() string {
 	return "postgres"
 }
 
-func (r Postgres) Source() string {
+// Source returns the data source name for the driver.
+func (r Postgres) Source() (string, error) {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithVersion("1.39"),
 	)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	defer docker.Close()
 
@@ -200,17 +203,17 @@ func (r Postgres) Source() string {
 	listOpts := types.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	if len(containers) == 0 {
-		return ""
+		return "", fmt.Errorf("container %q not found", r.RefName)
 	}
 
 	ctx = context.Background()
 	info, err := docker.ContainerInspect(ctx, containers[0].ID)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	address := info.NetworkSettings.IPAddress
@@ -228,5 +231,5 @@ func (r Postgres) Source() string {
 	} else {
 		url.DBName = url.User
 	}
-	return url.Source()
+	return url.Source(), nil
 }
