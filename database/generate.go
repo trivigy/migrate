@@ -65,8 +65,8 @@ type GenerateOptions struct {
 func (r *Generate) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name + " NAME[:TAG]",
-		Short: "blah blah blah generate.",
-		Long:  "blah blah blah generate",
+		Short: "Adds a new blank migration with increasing version.",
+		Long:  "Adds a new blank migration with increasing version",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")

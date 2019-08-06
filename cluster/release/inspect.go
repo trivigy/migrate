@@ -32,8 +32,8 @@ type InspectOptions struct {
 func (r *Inspect) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "blah blah blah create.",
-		Long:  "blah blah blah create",
+		Short: "Prints release resources detail information.",
+		Long:  "Prints release resources detail information",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")

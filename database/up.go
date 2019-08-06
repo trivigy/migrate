@@ -40,8 +40,8 @@ type UpOptions struct {
 func (r *Up) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "blah blah blah up.",
-		Long:  "blah blah blah up",
+		Short: "Executes the next queued migration.",
+		Long:  "Executes the next queued migration",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")

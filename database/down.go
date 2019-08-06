@@ -38,8 +38,8 @@ type DownOptions struct {
 func (r *Down) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "blah blah blah down.",
-		Long:  "blah blah blah down",
+		Short: "Rolls back to the previously applied migrations.",
+		Long:  "Rolls back to the previously applied migrations",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")

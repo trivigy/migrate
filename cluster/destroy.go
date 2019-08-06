@@ -32,8 +32,8 @@ type DestroyOptions struct {
 func (r *Destroy) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "blah blah blah destroy.",
-		Long:  "blah blah blah destroy",
+		Short: "Stops an existing running kubernetes cluster.",
+		Long:  "Stops an existing running kubernetes cluster",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")

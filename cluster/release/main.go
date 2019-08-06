@@ -25,8 +25,8 @@ func NewRelease(config map[string]config.Cluster) types.Command {
 func (r *Release) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          name,
-		Short:        "Clusters migration tool.",
-		Long:         "Clusters migration tool",
+		Short:        "Manages the lifecycle of a kubernetes release.",
+		Long:         "Manages the lifecycle of a kubernetes release",
 		SilenceUsage: true,
 	}
 

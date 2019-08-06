@@ -32,8 +32,8 @@ type ListOptions struct {
 func (r *List) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "blah blah blah create.",
-		Long:  "blah blah blah create",
+		Short: "List registered releases with states information.",
+		Long:  "List registered releases with states information",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")

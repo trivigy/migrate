@@ -33,8 +33,8 @@ type DestroyOptions struct {
 func (r *Destroy) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "blah blah blah destroy.",
-		Long:  "blah blah blah destroy",
+		Short: "Stops a running instance of a database.",
+		Long:  "Stops a running instance of a database",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")
