@@ -32,8 +32,8 @@ type DeleteOptions struct {
 func (r *Delete) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "blah blah blah create.",
-		Long:  "blah blah blah create",
+		Short: "Stops a running release and removes all resources.",
+		Long:  "Stops a running release and removes all resources",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")

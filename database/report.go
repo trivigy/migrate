@@ -38,8 +38,8 @@ type ReportOptions struct {
 func (r *Report) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "blah blah blah report.",
-		Long:  "blah blah blah report",
+		Short: "Prints which migrations were applied and when.",
+		Long:  "Prints which migrations were applied and when",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")

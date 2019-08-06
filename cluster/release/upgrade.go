@@ -32,8 +32,8 @@ type UpgradeOptions struct {
 func (r *Upgrade) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "blah blah blah create.",
-		Long:  "blah blah blah create",
+		Short: "Redeploy a modified release and track revision version.",
+		Long:  "Redeploy a modified release and track revision version",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")

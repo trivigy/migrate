@@ -33,8 +33,8 @@ type CreateOptions struct {
 func (r *Create) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "blah blah blah create.",
-		Long:  "blah blah blah create",
+		Short: "Sets up a new instance of a database.",
+		Long:  "Sets up a new instance of a database",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")
