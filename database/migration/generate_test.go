@@ -1,31 +1,18 @@
-package database
+package migration
 
 import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/trivigy/migrate/v2/config"
 	"github.com/trivigy/migrate/v2/internal/testutils"
 )
 
-type GenerateSuite struct {
-	suite.Suite
-	name string
-}
-
-func (r *GenerateSuite) SetupTest() {
-	r.name = "generate"
-}
-
-func (r *GenerateSuite) TestGenerateCommand() {
-	defaultConfig := map[string]config.Database{"default": {}}
-
+func (r *MigrationSuite) TestGenerateCommand() {
 	dir, err := ioutil.TempDir(os.TempDir(), "migrate-")
 	if err != nil {
 		panic(err)
@@ -41,7 +28,7 @@ func (r *GenerateSuite) TestGenerateCommand() {
 	}{
 		{
 			false, "",
-			defaultConfig,
+			r.config,
 			bytes.NewBuffer(nil),
 			[]string{"example", "-d", dir},
 		},
@@ -53,7 +40,7 @@ func (r *GenerateSuite) TestGenerateCommand() {
 		},
 		{
 			true, "Error: directory \"./not-found\" not found\n",
-			defaultConfig,
+			r.config,
 			bytes.NewBuffer(nil),
 			[]string{"example", "-d", "./not-found"},
 		},
@@ -62,7 +49,7 @@ func (r *GenerateSuite) TestGenerateCommand() {
 			"Error: accepts 1 arg(s), received 0 for \"generate\"\n" +
 				"\n" +
 				"Usage:  generate NAME[:TAG] [flags]\n",
-			defaultConfig,
+			r.config,
 			bytes.NewBuffer(nil),
 			[]string{},
 		},
@@ -71,7 +58,7 @@ func (r *GenerateSuite) TestGenerateCommand() {
 			"Error: invalid argument \"name:wrong\" for \"generate\"\n" +
 				"\n" +
 				"Usage:  generate NAME[:TAG] [flags]\n",
-			defaultConfig,
+			r.config,
 			bytes.NewBuffer(nil),
 			[]string{"name:wrong"},
 		},
@@ -80,7 +67,7 @@ func (r *GenerateSuite) TestGenerateCommand() {
 			"Error: invalid argument \"name:0.0.0-alpha.2+001\" for \"generate\"\n" +
 				"\n" +
 				"Usage:  generate NAME[:TAG] [flags]\n",
-			defaultConfig,
+			r.config,
 			bytes.NewBuffer(nil),
 			[]string{"name:0.0.0-alpha.2+001"},
 		},
@@ -90,7 +77,7 @@ func (r *GenerateSuite) TestGenerateCommand() {
 		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
 		runner := func() {
 			command := NewGenerate(testCase.config)
-			err := command.Execute(r.name, testCase.buffer, testCase.args)
+			err := command.Execute("generate", testCase.buffer, testCase.args)
 			if err != nil {
 				panic(testCase.buffer.String())
 			}
@@ -111,8 +98,4 @@ func (r *GenerateSuite) TestGenerateCommand() {
 			assert.NotPanics(r.T(), runner, failMsg)
 		}
 	}
-}
-
-func TestGenerateSuite(t *testing.T) {
-	suite.Run(t, new(GenerateSuite))
 }

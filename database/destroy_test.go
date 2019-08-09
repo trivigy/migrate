@@ -2,43 +2,42 @@ package database
 
 import (
 	"bytes"
-	"strings"
-	"testing"
+	"fmt"
 
-	"github.com/Pallinder/go-randomdata"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
-
-	"github.com/trivigy/migrate/v2/config"
-	"github.com/trivigy/migrate/v2/driver/docker"
 )
 
-type DestroySuite struct {
-	suite.Suite
-	name string
-}
+func (r *DatabaseSuite) TestDestroyCommand() {
+	buffer := bytes.NewBuffer(nil)
+	assert.Nil(r.T(), r.config["default"].Driver.Setup(buffer))
 
-func (r *DestroySuite) SetupTest() {
-	r.name = "destroy"
-}
-
-func (r *DestroySuite) TestDestroyCommand() {
-	cfg := map[string]config.Database{
-		"default": {
-			Driver: docker.Postgres{
-				RefName: strings.ToLower(randomdata.SillyName()),
-				Version: "9.6",
-				DBName:  "unittest",
-				User:    "postgres",
-			},
+	testCases := []struct {
+		shouldFail bool
+		onFail     string
+		buffer     *bytes.Buffer
+		args       []string
+	}{
+		{
+			false, "",
+			bytes.NewBuffer(nil),
+			[]string{},
 		},
 	}
 
-	buffer := bytes.NewBuffer(nil)
-	assert.Nil(r.T(), NewCreate(cfg).Execute(r.name, buffer, []string{}))
-	assert.Nil(r.T(), NewDestroy(cfg).Execute(r.name, buffer, []string{}))
-}
+	for i, testCase := range testCases {
+		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
+		runner := func() {
+			command := NewDestroy(r.config)
+			err := command.Execute("destroy", testCase.buffer, testCase.args)
+			if err != nil {
+				panic(testCase.buffer.String())
+			}
+		}
 
-func TestDestroySuite(t *testing.T) {
-	suite.Run(t, new(DestroySuite))
+		if testCase.shouldFail {
+			assert.PanicsWithValue(r.T(), testCase.onFail, runner, failMsg)
+		} else {
+			assert.NotPanics(r.T(), runner, failMsg)
+		}
+	}
 }
