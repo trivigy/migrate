@@ -5,6 +5,7 @@ import (
 	"io"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
@@ -100,7 +101,7 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 
 	table := tablewriter.NewWriter(out)
 	table.SetHeader([]string{"#", "Name", "Version", "Manifest", "Kind", "Status"})
-	table.SetColWidth(60)
+	table.SetAutoWrapText(false)
 
 	sort.Sort(cfg.Releases)
 	for i, rel := range cfg.Releases {
@@ -109,6 +110,23 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 			var kind string
 			var status string
 			switch manifest := manifest.(type) {
+			case *v1core.ConfigMap:
+				name = manifest.Name
+				kind = manifest.Kind
+				configMaps, err := kubectl.CoreV1().
+					ConfigMaps(cfg.Namespace).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(configMaps)
+				if err != nil {
+					return err
+				}
 			case *v1core.Service:
 				name = manifest.Name
 				kind = manifest.Kind
@@ -121,7 +139,11 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 				} else if err != nil {
 					return err
 				}
-				status = service.Status.String()
+
+				status, err = r.TrimmedYAML(service)
+				if err != nil {
+					return err
+				}
 			case *v1apps.Deployment:
 				name = manifest.Name
 				kind = manifest.Kind
@@ -134,25 +156,46 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 				} else if err != nil {
 					return err
 				}
-				status = deployment.Status.String()
+
+				status, err = r.TrimmedYAML(deployment)
+				if err != nil {
+					return err
+				}
 			default:
 				return fmt.Errorf("unsupported manifest type %T", manifest)
 			}
 
+			lines := strings.Split(status, "\n")
 			if j == 0 {
-				table.Append([]string{
-					strconv.Itoa(i + 1),
-					rel.Name,
-					rel.Version.String(),
-					name,
-					kind,
-					status,
-				})
+				for k, line := range lines {
+					if k == 0 {
+						table.Append([]string{
+							strconv.Itoa(i + 1),
+							rel.Name,
+							rel.Version.String(),
+							name,
+							kind,
+							line,
+						})
+					} else {
+						table.Append([]string{"", "", "", "", "", line})
+					}
+				}
 			} else {
-				table.Append([]string{"", "", "", name, kind, status})
+				for k, line := range lines {
+					if k == 0 {
+						table.Append([]string{"", "", "", name, kind, line})
+					} else {
+						table.Append([]string{"", "", "", "", "", line})
+					}
+				}
 			}
 		}
 	}
-	table.Render()
+
+	if len(cfg.Releases) > 0 {
+		table.Render()
+	}
+
 	return nil
 }

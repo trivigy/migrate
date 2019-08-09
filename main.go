@@ -2,7 +2,6 @@ package migrate
 
 import (
 	"io"
-	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -13,9 +12,6 @@ import (
 	"github.com/trivigy/migrate/v2/internal/nub"
 	"github.com/trivigy/migrate/v2/types"
 )
-
-// Registry is the container holding registered migrations.
-var Registry sync.Map
 
 // Migrate represents the migrate command object.
 type Migrate struct {

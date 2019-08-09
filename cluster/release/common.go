@@ -1,6 +1,10 @@
 package release
 
 import (
+	"encoding/json"
+	"strings"
+
+	"github.com/ghodss/yaml"
 	v1core "k8s.io/api/core/v1"
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,4 +51,17 @@ func (r common) GetKubeCtl(cfg config.Cluster) (*kubernetes.Clientset, error) {
 		return nil, err
 	}
 	return kubectl, nil
+}
+
+func (r common) TrimmedYAML(value interface{}) (string, error) {
+	rbytesJSON, err := json.Marshal(value)
+	if err != nil {
+		return "", err
+	}
+
+	rbytesYAML, err := yaml.JSONToYAML(rbytesJSON)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(rbytesYAML)), nil
 }
