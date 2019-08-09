@@ -2,9 +2,6 @@ package cluster
 
 import (
 	"io"
-	"path"
-	"runtime"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -14,34 +11,6 @@ import (
 	"github.com/trivigy/migrate/v2/internal/nub"
 	"github.com/trivigy/migrate/v2/types"
 )
-
-const namespace = "cluster"
-
-// Path generates a key path for a migrations stored in a shared map.
-func Path(name string, tag string) string {
-	_, caller, _, _ := runtime.Caller(1)
-	group := path.Base(path.Dir(caller))
-	return strings.Join([]string{namespace, group, tag + "_" + name}, "/")
-}
-
-// Filter iterates over all registered cluster migrations.
-func Filter(fn func(release types.Release)) types.RangeFunc {
-	return func(key, value interface{}) bool {
-		fullname := strings.Split(key.(string), "/")
-		if fullname[0] == namespace {
-			fn(value.(types.Release))
-		}
-		return true
-	}
-}
-
-// Collect iterates over all regirstered cluster migrations and adds them to
-// the specified migration.
-func Collect(releases *types.Releases) types.RangeFunc {
-	return Filter(func(release types.Release) {
-		*releases = append(*releases, release)
-	})
-}
 
 // Cluster represents a cluster root command.
 type Cluster struct {

@@ -101,6 +101,18 @@ func (r *Install) Run(out io.Writer, opts InstallOptions) error {
 	for _, rel := range cfg.Releases {
 		for _, manifest := range rel.Manifests {
 			switch manifest := manifest.(type) {
+			case *v1core.ConfigMap:
+				_, err := kubectl.CoreV1().
+					ConfigMaps(cfg.Namespace).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.CoreV1().
+						ConfigMaps(cfg.Namespace).
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
 			case *v1core.Service:
 				_, err := kubectl.CoreV1().
 					Services(cfg.Namespace).
