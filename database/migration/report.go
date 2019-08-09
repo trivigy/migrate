@@ -121,7 +121,7 @@ func (r *Report) Run(out io.Writer, opts UpOptions) error {
 	for i := 0; i < maxSize; i++ {
 		var rgMig *types.Migration
 		if i < len(sortedRegistryMigrations) {
-			rgMig = &sortedRegistryMigrations[i]
+			rgMig = sortedRegistryMigrations[i]
 		}
 
 		var dbMig *model.Migration

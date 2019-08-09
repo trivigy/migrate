@@ -37,7 +37,8 @@ func (r Kind) TearDown(out io.Writer) error {
 	if err := r.Execute(out, []string{
 		"delete", "cluster",
 		"--name", r.Name,
-	}); err != nil {
+	}); err != nil &&
+		!strings.HasPrefix(err.Error(), "unknown cluster") {
 		return err
 	}
 	return nil
@@ -69,24 +70,25 @@ func (r Kind) Execute(out io.Writer, args []string) error {
 		outC <- nil
 	}()
 
+	defer func() {
+		os.Stdout = old
+		if err := wr.Close(); err != nil {
+			panic(err)
+		}
+
+		err := <-outC
+		if err != nil {
+			panic(err)
+		}
+		close(outC)
+	}()
+
 	cmd := kind.NewCommand()
 	cmd.SetOut(out)
-	cmd.SetErr(out)
 	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
 		return err
 	}
-
-	os.Stdout = old
-	if err := wr.Close(); err != nil {
-		return err
-	}
-
-	err := <-outC
-	if err != nil {
-		return err
-	}
-	close(outC)
 	return nil
 }
 

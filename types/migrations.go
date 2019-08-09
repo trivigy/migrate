@@ -1,7 +1,7 @@
 package types
 
 // Migrations represents multiple database migrations.
-type Migrations []Migration
+type Migrations []*Migration
 
 // Len returns length of migrations collection
 func (s Migrations) Len() int {

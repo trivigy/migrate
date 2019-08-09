@@ -16,7 +16,7 @@ type Operation struct {
 }
 
 // Execute runs the query operation on the database.
-func (r Operation) Execute(db *store.Context, migration Migration, d Direction) error {
+func (r Operation) Execute(db *store.Context, migration *Migration, d Direction) error {
 	var err error
 	var executor Executor
 

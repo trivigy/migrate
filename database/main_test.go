@@ -7,13 +7,11 @@ import (
 	"testing"
 
 	"github.com/Pallinder/go-randomdata"
-	"github.com/blang/semver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/trivigy/migrate/v2/config"
 	"github.com/trivigy/migrate/v2/driver/docker"
-	"github.com/trivigy/migrate/v2/types"
 )
 
 type DatabaseSuite struct {
@@ -22,42 +20,8 @@ type DatabaseSuite struct {
 }
 
 func (r *DatabaseSuite) SetupSuite() {
-	migrations := []types.Migration{
-		{
-			Name: "create-unittest-table",
-			Tag:  semver.Version{Major: 0, Minor: 0, Patch: 1},
-			Up: []types.Operation{
-				{Query: `CREATE TABLE unittests (value text)`},
-			},
-			Down: []types.Operation{
-				{Query: `DROP TABLE unittests`},
-			},
-		},
-		{
-			Name: "seed-dummy-data",
-			Tag:  semver.Version{Major: 0, Minor: 0, Patch: 2},
-			Up: []types.Operation{
-				{Query: `INSERT INTO unittests(value) VALUES ('hello'), ('world')`},
-			},
-			Down: []types.Operation{
-				{Query: `DELETE FROM unittests WHERE value in ('hello', 'world')`},
-			},
-		},
-		{
-			Name: "seed-more-dummy-data",
-			Tag:  semver.Version{Major: 0, Minor: 0, Patch: 3},
-			Up: []types.Operation{
-				{Query: `INSERT INTO unittests(value) VALUES ('here'), ('there')`},
-			},
-			Down: []types.Operation{
-				{Query: `DELETE FROM unittests WHERE value in ('here', 'there')`},
-			},
-		},
-	}
-
 	r.config = map[string]config.Database{
 		"default": {
-			Migrations: migrations,
 			Driver: docker.Postgres{
 				RefName: strings.ToLower(randomdata.SillyName()),
 				Version: "9.6",
