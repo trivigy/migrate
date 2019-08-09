@@ -8,6 +8,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3
 	github.com/docker/docker v1.14.0-0.20190131205458-8a43b7bb99cd
+	github.com/ghodss/yaml v1.0.0
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/google/uuid v1.1.1
 	github.com/lib/pq v1.1.1

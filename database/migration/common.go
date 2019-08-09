@@ -19,7 +19,7 @@ func (r common) GenerateMigrationPlan(
 	db *store.Context,
 	direction types.Direction,
 	migrations types.Migrations,
-) ([]types.Migration, error) {
+) ([]*types.Migration, error) {
 	if err := db.Migrations.CreateTableIfNotExists(); err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (r common) GenerateMigrationPlan(
 	for ; i < maxSize; i++ {
 		var rgMig *types.Migration
 		if i < len(sortedRegistryMigrations) {
-			rgMig = &sortedRegistryMigrations[i]
+			rgMig = sortedRegistryMigrations[i]
 		}
 
 		var dbMig *model.Migration
@@ -65,7 +65,7 @@ func (r common) GenerateMigrationPlan(
 		}
 	}
 
-	plan := make([]types.Migration, 0)
+	plan := make([]*types.Migration, 0)
 	if direction == types.DirectionUp {
 		for j := i; j < len(sortedRegistryMigrations); j++ {
 			plan = append(plan, sortedRegistryMigrations[j])

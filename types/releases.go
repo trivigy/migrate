@@ -1,7 +1,7 @@
 package types
 
 // Releases represents a collection of kubernetes releases.
-type Releases []Release
+type Releases []*Release
 
 // Len returns length of releases collection
 func (s Releases) Len() int {

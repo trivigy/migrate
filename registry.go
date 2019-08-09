@@ -37,7 +37,7 @@ func (r *registry) Filter(glob string, fn func(element interface{})) types.Range
 func (r *registry) Collect(glob string, collection interface{}) {
 	r.Range(r.Filter(glob, func(element interface{}) {
 		switch elm := element.(type) {
-		case types.Migration:
+		case *types.Migration:
 			col, ok := collection.(*types.Migrations)
 			if !ok {
 				panic(fmt.Errorf(
@@ -47,7 +47,7 @@ func (r *registry) Collect(glob string, collection interface{}) {
 			}
 
 			*col = append(*col, elm)
-		case types.Release:
+		case *types.Release:
 			col, ok := collection.(*types.Releases)
 			if !ok {
 				panic(fmt.Errorf(
