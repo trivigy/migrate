@@ -1,4 +1,4 @@
-package database
+package migration
 
 import (
 	"bytes"
@@ -16,16 +16,12 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-type DownSuite struct {
+type MigrationSuite struct {
 	suite.Suite
-	name string
+	config map[string]config.Database
 }
 
-func (r *DownSuite) SetupTest() {
-	r.name = "down"
-}
-
-func (r *DownSuite) TestDownCommand() {
+func (r *MigrationSuite) SetupSuite() {
 	migrations := []types.Migration{
 		{
 			Name: "create-unittest-table",
@@ -59,7 +55,7 @@ func (r *DownSuite) TestDownCommand() {
 		},
 	}
 
-	defaultConfig := map[string]config.Database{
+	r.config = map[string]config.Database{
 		"default": {
 			Migrations: migrations,
 			Driver: docker.Postgres{
@@ -71,11 +67,23 @@ func (r *DownSuite) TestDownCommand() {
 		},
 	}
 
-	create := NewCreate(defaultConfig)
-	assert.Nil(r.T(), create.Execute("create", bytes.NewBuffer(nil), []string{}))
+	buffer := bytes.NewBuffer(nil)
+	assert.Nil(r.T(), r.config["default"].Driver.Setup(buffer))
+}
 
-	up := NewUp(defaultConfig)
-	assert.Nil(r.T(), up.Execute("up", bytes.NewBuffer(nil), []string{"-n", "0"}))
+func (r *MigrationSuite) TearDownSuite() {
+	buffer := bytes.NewBuffer(nil)
+	assert.Nil(r.T(), r.config["default"].Driver.TearDown(buffer))
+}
+
+func (r *MigrationSuite) TearDownTest() {
+	buffer := bytes.NewBuffer(nil)
+	down := NewDown(r.config)
+	assert.Nil(r.T(), down.Execute("down", buffer, []string{"-n", "0"}))
+}
+
+func (r *MigrationSuite) TestDatabaseCommand() {
+	defaultConfig := map[string]config.Database{"default": {}}
 
 	testCases := []struct {
 		shouldFail bool
@@ -87,41 +95,31 @@ func (r *DownSuite) TestDownCommand() {
 		{
 			false, "",
 			bytes.NewBuffer(nil),
-			[]string{"--dry-run"},
-			"==> migration \"0.0.3_seed-more-dummy-data\" (down)\n" +
-				"DELETE FROM unittests WHERE value in ('here', 'there');\n",
-		},
-		{
-			false, "",
-			bytes.NewBuffer(nil),
-			[]string{"-n", "0", "--dry-run"},
-			"==> migration \"0.0.3_seed-more-dummy-data\" (down)\n" +
-				"DELETE FROM unittests WHERE value in ('here', 'there');\n" +
-				"==> migration \"0.0.2_seed-dummy-data\" (down)\n" +
-				"DELETE FROM unittests WHERE value in ('hello', 'world');\n" +
-				"==> migration \"0.0.1_create-unittest-table\" (down)\n" +
-				"DROP TABLE unittests;\n",
-		},
-		{
-			false, "",
-			bytes.NewBuffer(nil),
-			[]string{"-n", "1"},
-			"migration \"0.0.3_seed-more-dummy-data\" successfully removed (down)\n",
-		},
-		{
-			false, "",
-			bytes.NewBuffer(nil),
-			[]string{"-n", "0"},
-			"migration \"0.0.2_seed-dummy-data\" successfully removed (down)\n" +
-				"migration \"0.0.1_create-unittest-table\" successfully removed (down)\n",
+			[]string{"--help"},
+			"Manages the lifecycle of a database migration\n" +
+				"\n" +
+				"Usage:\n" +
+				"  migration [command]\n" +
+				"\n" +
+				"Available Commands:\n" +
+				"  down        Rolls back to the previously applied migrations.\n" +
+				"  generate    Adds a new blank migration with increasing version.\n" +
+				"  report      Prints which migrations were applied and when.\n" +
+				"  up          Executes the next queued migration.\n" +
+				"\n" +
+				"Flags:\n" +
+				"  -e, --env ENV   Run with env ENV configurations. (default \"default\")\n" +
+				"      --help      Show help information.\n" +
+				"\n" +
+				"Use \"migration [command] --help\" for more information about a command.\n",
 		},
 	}
 
 	for i, testCase := range testCases {
 		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
 		runner := func() {
-			command := NewDown(defaultConfig)
-			err := command.Execute(r.name, testCase.buffer, testCase.args)
+			command := NewMigration(defaultConfig)
+			err := command.Execute("migration", testCase.buffer, testCase.args)
 			if err != nil {
 				panic(testCase.buffer.String())
 			}
@@ -137,11 +135,8 @@ func (r *DownSuite) TestDownCommand() {
 			assert.NotPanics(r.T(), runner, failMsg)
 		}
 	}
-
-	destroy := NewDestroy(defaultConfig)
-	assert.Nil(r.T(), destroy.Execute("destroy", bytes.NewBuffer(nil), []string{}))
 }
 
-func TestDownSuite(t *testing.T) {
-	suite.Run(t, new(DownSuite))
+func TestMigrationSuite(t *testing.T) {
+	suite.Run(t, new(MigrationSuite))
 }

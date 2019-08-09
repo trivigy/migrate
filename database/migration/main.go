@@ -1,4 +1,4 @@
-package database
+package migration
 
 import (
 	"io"
@@ -7,35 +7,35 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/trivigy/migrate/v2/config"
-	"github.com/trivigy/migrate/v2/database/migration"
 	"github.com/trivigy/migrate/v2/internal/nub"
 	"github.com/trivigy/migrate/v2/types"
 )
 
-// Database represents a database root command.
-type Database struct {
+// Migration represents a database migration root command.
+type Migration struct {
 	config map[string]config.Database
 }
 
-// NewDatabase instantiates a new database command and returns it.
-func NewDatabase(config map[string]config.Database) types.Command {
-	return &Database{config: config}
+// NewMigration instantiates a new database migration command and returns it.
+func NewMigration(config map[string]config.Database) types.Command {
+	return &Migration{config: config}
 }
 
 // NewCommand returns a new cobra.Command object.
-func (r *Database) NewCommand(name string) *cobra.Command {
+func (r *Migration) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          name,
-		Short:        "SQL database deployment and migrations management tool.",
-		Long:         "SQL database deployment and migrations management tool",
+		Short:        "Manages the lifecycle of a database migration.",
+		Long:         "Manages the lifecycle of a database migration",
 		SilenceUsage: true,
 	}
 
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	cmd.AddCommand(
-		NewCreate(r.config).(*Create).NewCommand("create"),
-		NewDestroy(r.config).(*Destroy).NewCommand("destroy"),
-		migration.NewMigration(r.config).(*migration.Migration).NewCommand("migration"),
+		NewGenerate(r.config).(*Generate).NewCommand("generate"),
+		NewUp(r.config).(*Up).NewCommand("up"),
+		NewDown(r.config).(*Down).NewCommand("down"),
+		NewReport(r.config).(*Report).NewCommand("report"),
 	)
 
 	pflags := cmd.PersistentFlags()
@@ -51,7 +51,7 @@ func (r *Database) NewCommand(name string) *cobra.Command {
 }
 
 // Execute runs the command.
-func (r *Database) Execute(name string, out io.Writer, args []string) error {
+func (r *Migration) Execute(name string, out io.Writer, args []string) error {
 	main := r.NewCommand(name)
 	main.SetOut(out)
 	main.SetArgs(args)

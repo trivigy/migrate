@@ -1,4 +1,4 @@
-package database
+package migration
 
 import (
 	"fmt"
@@ -20,25 +20,23 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-const templateContent = `
-package migrations
+const templateContent = `package migrations
 
 import (
 	"github.com/blang/semver"
-	"github.com/trivigy/migrate"
-	"github.com/trivigy/migrate/database"
+	"github.com/trivigy/migrate/v2"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 func init() {
-	tag := "{{ .Tag }}"
-	name := "{{ .Name }}"
-	migrate.Registry.Store(database.Path(name, tag), database.Migration{
-		Name: name,		
-		Tag: semver.MustParse(tag),
-		Up: []database.Operation{},
-		Down: []database.Operation{},
+	migrate.Registry.Store(types.Migration{
+		Name: "{{ .Name }}",
+		Tag:  semver.MustParse("{{ .Tag }}"),
+		Up: []types.Operation{},
+		Down: []types.Operation{},
 	})
 }
+
 `
 
 // Generate represents the generate command which allows for generating new

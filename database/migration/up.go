@@ -1,8 +1,10 @@
-package database
+package migration
 
 import (
 	"fmt"
 	"io"
+	"sort"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -15,30 +17,30 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-// Down represents the database migration down command object.
-type Down struct {
+// Up represents the database up command object.
+type Up struct {
 	common
 	config map[string]config.Database
 }
 
-// NewDown initializes a new database down command.
-func NewDown(config map[string]config.Database) types.Command {
-	return &Down{config: config}
+// NewUp initializes a new database up command.
+func NewUp(config map[string]config.Database) types.Command {
+	return &Up{config: config}
 }
 
-// DownOptions is used for executing the Run() command.
-type DownOptions struct {
+// UpOptions is used for executing the Run() command.
+type UpOptions struct {
 	Env    string `json:"env" yaml:"env"`
 	Num    int    `json:"num" yaml:"num"`
 	DryRun bool   `json:"dryRun" yaml:"dryRun"`
 }
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
-func (r *Down) NewCommand(name string) *cobra.Command {
+func (r *Up) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "Rolls back to the previously applied migrations.",
-		Long:  "Rolls back to the previously applied migrations",
+		Short: "Executes the next queued migration.",
+		Long:  "Executes the next queued migration",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")
@@ -56,7 +58,7 @@ func (r *Down) NewCommand(name string) *cobra.Command {
 				return errors.WithStack(err)
 			}
 
-			opts := DownOptions{Env: env, Num: num, DryRun: dryRun}
+			opts := UpOptions{Env: env, Num: num, DryRun: dryRun}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
 		SilenceUsage: true,
@@ -83,7 +85,7 @@ func (r *Down) NewCommand(name string) *cobra.Command {
 }
 
 // Execute runs the command.
-func (r *Down) Execute(name string, out io.Writer, args []string) error {
+func (r *Up) Execute(name string, out io.Writer, args []string) error {
 	cmd := r.NewCommand(name)
 	cmd.SetOut(out)
 	cmd.SetArgs(args)
@@ -94,20 +96,21 @@ func (r *Down) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r *Down) validation(args []string) error {
+func (r *Up) validation(args []string) error {
 	if err := require.NoArgs(args); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Run is a starting point method for executing the down command.
-func (r *Down) Run(out io.Writer, opts DownOptions) error {
+// Run is a starting point method for executing the up command.
+func (r *Up) Run(out io.Writer, opts UpOptions) error {
 	cfg, ok := r.config[opts.Env]
 	if !ok {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
 
+	sort.Sort(cfg.Migrations)
 	source, err := cfg.Driver.Source()
 	if err != nil {
 		return err
@@ -118,7 +121,7 @@ func (r *Down) Run(out io.Writer, opts DownOptions) error {
 		return err
 	}
 
-	migrationPlan, err := r.GenerateMigrationPlan(db, types.DirectionDown, cfg.Migrations)
+	migrationPlan, err := r.GenerateMigrationPlan(db, types.DirectionUp, cfg.Migrations)
 	if err != nil {
 		return err
 	}
@@ -132,34 +135,35 @@ func (r *Down) Run(out io.Writer, opts DownOptions) error {
 		for i := 0; i < steps; i++ {
 			fmt.Fprintf(out, "==> migration %q (%s)\n",
 				migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,
-				types.DirectionDown,
+				types.DirectionUp,
 			)
-			for _, op := range migrationPlan[i].Down {
+			for _, op := range migrationPlan[i].Up {
 				fmt.Fprintf(out, "%s;\n", op.Query)
 			}
 		}
 	} else {
 		for i := 0; i < steps; i++ {
-			for _, op := range migrationPlan[i].Down {
-				err := op.Execute(db, migrationPlan[i], types.DirectionDown)
+			for _, op := range migrationPlan[i].Up {
+				err := op.Execute(db, migrationPlan[i], types.DirectionUp)
 				if err != nil {
 					return err
 				}
 			}
 
-			if err := db.Migrations.Delete(&model.Migration{
-				Tag: migrationPlan[i].Tag.String(),
+			if err := db.Migrations.Insert(&model.Migration{
+				Tag:       migrationPlan[i].Tag.String(),
+				Timestamp: time.Now(),
 			}); err != nil {
 				return fmt.Errorf(
-					"failed deleting previously applied migration %q (%s)",
+					"failed recording migration %q (%s)",
 					migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,
-					types.DirectionDown,
+					types.DirectionUp,
 				)
 			}
 
-			fmt.Fprintf(out, "migration %q successfully removed (%s)\n",
+			fmt.Fprintf(out, "migration %q successfully applied (%s)\n",
 				migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,
-				types.DirectionDown,
+				types.DirectionUp,
 			)
 		}
 	}

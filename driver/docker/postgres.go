@@ -36,7 +36,7 @@ type Postgres struct {
 func (r Postgres) Setup(out io.Writer) error {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
-		client.WithVersion("1.39"),
+		client.WithVersion("1.38"),
 	)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (r Postgres) Setup(out io.Writer) error {
 func (r Postgres) TearDown(out io.Writer) error {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
-		client.WithVersion("1.39"),
+		client.WithVersion("1.38"),
 	)
 	if err != nil {
 		return err
@@ -188,7 +188,7 @@ func (r Postgres) Name() string {
 func (r Postgres) Source() (string, error) {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
-		client.WithVersion("1.39"),
+		client.WithVersion("1.38"),
 	)
 	if err != nil {
 		return "", err

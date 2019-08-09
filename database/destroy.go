@@ -15,7 +15,6 @@ import (
 
 // Destroy represents the database destroy command.
 type Destroy struct {
-	common
 	config map[string]config.Database
 }
 
