@@ -122,12 +122,12 @@ func (r *Report) Run(out io.Writer, opts UpOptions) error {
 	table.SetHeader([]string{"Tag", "Name", "Applied"})
 	table.SetColWidth(60)
 
-	maxSize := max(len(sortedRegistryMigrations), len(sortedDatabaseMigrations))
+	maxSize := max(len(*sortedRegistryMigrations), len(sortedDatabaseMigrations))
 
 	for i := 0; i < maxSize; i++ {
 		var rgMig *types.Migration
-		if i < len(sortedRegistryMigrations) {
-			rgMig = sortedRegistryMigrations[i]
+		if i < len(*sortedRegistryMigrations) {
+			rgMig = (*sortedRegistryMigrations)[i]
 		}
 
 		var dbMig *model.Migration
