@@ -15,5 +15,5 @@ func (s Releases) Swap(i, j int) {
 
 // Less checks if release at index i is less than release at index j
 func (s Releases) Less(i, j int) bool {
-	return s[i].Name < s[j].Name && s[i].Version.LT(s[j].Version)
+	return s[i].Name < s[j].Name || (s[i].Name == s[j].Name && s[i].Version.LT(s[j].Version))
 }
