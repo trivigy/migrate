@@ -2,67 +2,191 @@ package release
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/Pallinder/go-randomdata"
+	"github.com/blang/semver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	v1apps "k8s.io/api/apps/v1"
+	v1core "k8s.io/api/core/v1"
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/trivigy/migrate/v2/driver"
+	"github.com/trivigy/migrate/v2/config"
 	"github.com/trivigy/migrate/v2/driver/provider"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 type ReleaseSuite struct {
 	suite.Suite
-	driver driver.Cluster
+	config map[string]config.Cluster
 }
 
 func (r *ReleaseSuite) SetupSuite() {
+	releases := &types.Releases{
+		{
+			Name:    "create-unittest-cluster",
+			Version: semver.Version{Major: 0, Minor: 0, Patch: 1},
+			Manifests: []interface{}{
+				&v1core.ConfigMap{
+					TypeMeta: v1meta.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "ConfigMap",
+					},
+					ObjectMeta: v1meta.ObjectMeta{
+						Name: "unittest",
+					},
+					Data: map[string]string{
+						"hello": "world",
+					},
+				},
+				&v1core.Service{
+					TypeMeta: v1meta.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Service",
+					},
+					ObjectMeta: v1meta.ObjectMeta{
+						Name: "unittest",
+					},
+					Spec: v1core.ServiceSpec{
+						Type: v1core.ServiceTypeLoadBalancer,
+						Ports: []v1core.ServicePort{
+							{
+								Port: 80,
+								TargetPort: intstr.IntOrString{
+									Type:   intstr.String,
+									StrVal: "8080",
+								},
+							},
+						},
+						Selector: map[string]string{
+							"app": "unittest",
+						},
+					},
+				},
+				&v1apps.Deployment{
+					TypeMeta: v1meta.TypeMeta{
+						APIVersion: "apps/v1",
+						Kind:       "Deployment",
+					},
+					ObjectMeta: v1meta.ObjectMeta{
+						Name: "unittest",
+					},
+					Spec: v1apps.DeploymentSpec{
+						Replicas: &[]int32{1}[0],
+						Selector: &v1meta.LabelSelector{
+							MatchLabels: map[string]string{
+								"app": "unittest",
+							},
+						},
+						Template: v1core.PodTemplateSpec{
+							ObjectMeta: v1meta.ObjectMeta{
+								Labels: map[string]string{
+									"app": "unittest",
+								},
+							},
+							Spec: v1core.PodSpec{
+								Containers: []v1core.Container{
+									{
+										Name:  "hello-kubernetes",
+										Image: "paulbouwer/hello-kubernetes:1.5",
+										Ports: []v1core.ContainerPort{
+											{
+												ContainerPort: 8080,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	r.config = map[string]config.Cluster{
+		"default": {
+			Namespace: "unittest",
+			Releases:  releases,
+			Driver: provider.Kind{
+				Name: strings.ToLower(randomdata.SillyName()),
+			},
+		},
+	}
+
 	buffer := bytes.NewBuffer(nil)
-	r.driver = provider.Kind{Name: strings.ToLower(randomdata.SillyName())}
-	assert.Nil(r.T(), r.driver.Setup(buffer))
+	assert.Nil(r.T(), r.config["default"].Driver.Setup(buffer))
 }
 
 func (r *ReleaseSuite) TearDownSuite() {
 	buffer := bytes.NewBuffer(nil)
-	assert.Nil(r.T(), r.driver.TearDown(buffer))
+	assert.Nil(r.T(), r.config["default"].Driver.TearDown(buffer))
+}
+
+func (r *ReleaseSuite) TearDownTest() {
+	// buffer := bytes.NewBuffer(nil)
+	// command := NewUninstall(r.config)
+	// assert.Nil(r.T(), command.Execute("down", buffer, []string{}))
 }
 
 func (r *ReleaseSuite) TestReleaseCommand() {
-	// command := NewCluster(map[string]Config{"default": {}})
-	//
-	// buffer := bytes.NewBuffer(nil)
-	// if err := command.Execute(r.name, buffer, []string{"--help"}); err != nil {
-	// 	os.Exit(1)
-	// }
-	// if err := command.Execute(r.name, buffer, []string{"create", "--help"}); err != nil {
-	// 	os.Exit(1)
-	// }
+	testCases := []struct {
+		shouldFail bool
+		onFail     string
+		buffer     *bytes.Buffer
+		args       []string
+		output     string
+	}{
+		{
+			false, "",
+			bytes.NewBuffer(nil),
+			[]string{"--help"},
+			"Manages the lifecycle of a kubernetes release\n" +
+				"\n" +
+				"Usage:\n" +
+				"  release [command]\n" +
+				"\n" +
+				"Available Commands:\n" +
+				"  delete      Stops a running release and removes all resources.\n" +
+				"  generate    Adds a new release template.\n" +
+				"  history     Prints revisions history of deployed releases.\n" +
+				"  inspect     Prints release resources detail information.\n" +
+				"  install     Deploys release resources on running cluster.\n" +
+				"  list        List registered releases with states information.\n" +
+				"  upgrade     Redeploy a modified release and track revision version.\n" +
+				"\n" +
+				"Flags:\n" +
+				"  -e, --env ENV   Run with env ENV configurations. (default \"default\")\n" +
+				"      --help      Show help information.\n" +
+				"\n" +
+				"Use \"release [command] --help\" for more information about a command.\n",
+		},
+	}
 
-	// err := Append(dto.Migration{
-	// 	Tag: semver.Version{Major: 0, Minor: 0, Patch: 1},
-	// 	Up: []dto.Operation{
-	// 		{Query: `CREATE TABLE unittest1 (id int)`},
-	// 	},
-	// 	Down: []dto.Operation{
-	// 		{Query: `DROP TABLE unittest1`},
-	// 	},
-	// })
-	// assert.Nil(r.T(), err)
-	//
-	// // @formatter:off
-	// expected :=
-	// 	"+-------+---------+\n" +
-	// 		"|  TAG  | APPLIED |\n" +
-	// 		"+-------+---------+\n" +
-	// 		"| 0.0.1 | pending |\n" +
-	// 		"+-------+---------+\n"
-	// // @formatter:on
-	//
-	// output, err := ExecuteWithArgs("status", "--env", "testing")
-	// assert.Equal(r.T(), expected, output)
-	// assert.Nil(r.T(), err)
+	for i, testCase := range testCases {
+		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
+		runner := func() {
+			command := NewRelease(r.config)
+			err := command.Execute("release", testCase.buffer, testCase.args)
+			if err != nil {
+				panic(testCase.buffer.String())
+			}
+
+			if testCase.output != testCase.buffer.String() {
+				panic(testCase.buffer.String())
+			}
+		}
+
+		if testCase.shouldFail {
+			assert.PanicsWithValue(r.T(), testCase.onFail, runner, failMsg)
+		} else {
+			assert.NotPanics(r.T(), runner, failMsg)
+		}
+	}
 }
 
 func TestReleaseSuite(t *testing.T) {
