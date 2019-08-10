@@ -62,3 +62,21 @@ func (r common) TrimmedYAML(value interface{}) (string, error) {
 	}
 	return strings.TrimSpace(string(rbytesYAML)), nil
 }
+
+func (r common) ChunkString(s string, chunkSize int) []string {
+	var chunks []string
+	runes := []rune(s)
+
+	if len(runes) == 0 {
+		return []string{s}
+	}
+
+	for i := 0; i < len(runes); i += chunkSize {
+		nn := i + chunkSize
+		if nn > len(runes) {
+			nn = len(runes)
+		}
+		chunks = append(chunks, string(runes[i:nn]))
+	}
+	return chunks
+}

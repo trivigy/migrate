@@ -165,7 +165,32 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 				return fmt.Errorf("unsupported manifest type %T", manifest)
 			}
 
+			// Chunk values greater than 64 chars and adds them back
+			// as extra status lines. The chunks are aligned under the original
+			// value start index. Like a hanging styled text.
+			chunkSize := 80
 			lines := strings.Split(status, "\n")
+			for i, line := range lines {
+				keyVal := strings.SplitN(line, ":", 2)
+				if len(keyVal) < 2 {
+					continue
+				}
+				value := strings.TrimSpace(keyVal[1])
+				if len(value) > chunkSize {
+					chunks := r.ChunkString(value, chunkSize)
+					lines[i] = keyVal[0] + ": " + chunks[0]
+					for x := len(chunks[1:]) - 1; x >= 0; x-- {
+						lines = append(lines[:i+1], append([]string{
+							fmt.Sprintf("%s%s",
+								strings.Repeat(" ", len(keyVal[0])+2),
+								chunks[1:][x],
+							),
+						}, lines[i+1:]...)...)
+					}
+				}
+			}
+
+			// Append the styled lines to the table.
 			if j == 0 {
 				for k, line := range lines {
 					if k == 0 {
