@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/kind/cmd/kind"
@@ -17,16 +18,40 @@ import (
 // Kind represents a driver for the Kubernetes IN Docker (sigs.k8s.io/kind)
 // project.
 type Kind struct {
-	Name string
+	Name   string
+	Config map[string]interface{}
 }
 
 // Setup executes the resource creation process.
 func (r Kind) Setup(out io.Writer) error {
-	if err := r.Execute(out, []string{
+	args := []string{
 		"create", "cluster",
 		"--name", r.Name,
 		"--wait", "5m",
-	}); err != nil {
+	}
+	if r.Config != nil {
+		rbytes, err := yaml.Marshal(r.Config)
+		if err != nil {
+			return err
+		}
+
+		tmpfile, err := ioutil.TempFile(os.TempDir(), "lockerKind-*.yaml")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer os.Remove(tmpfile.Name())
+
+		if _, err := tmpfile.Write(rbytes); err != nil {
+			return err
+		}
+		if err := tmpfile.Close(); err != nil {
+			return err
+		}
+
+		args = append(args, "--config", tmpfile.Name())
+	}
+
+	if err := r.Execute(out, args); err != nil {
 		return err
 	}
 	return nil
@@ -94,15 +119,15 @@ func (r Kind) Execute(out io.Writer, args []string) error {
 
 // KubeConfig returns the content of kubeconfig file.
 func (r Kind) KubeConfig() (*rest.Config, error) {
-	buffer := bytes.NewBuffer(nil)
-	if err := r.Execute(buffer, []string{
+	out := bytes.NewBuffer(nil)
+	if err := r.Execute(out, []string{
 		"get", "kubeconfig-path",
 		"--name", r.Name,
 	}); err != nil {
 		return nil, err
 	}
 
-	kubeConfigBytes, err := ioutil.ReadFile(strings.TrimSpace(buffer.String()))
+	kubeConfigBytes, err := ioutil.ReadFile(strings.TrimSpace(out.String()))
 	if err != nil {
 		return nil, err
 	}
