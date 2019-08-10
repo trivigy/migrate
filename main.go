@@ -9,7 +9,7 @@ import (
 	"github.com/trivigy/migrate/v2/cluster"
 	"github.com/trivigy/migrate/v2/config"
 	"github.com/trivigy/migrate/v2/database"
-	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/nub"
 	"github.com/trivigy/migrate/v2/types"
 )
 

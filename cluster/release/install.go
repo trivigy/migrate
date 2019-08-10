@@ -13,8 +13,8 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/trivigy/migrate/v2/config"
-	"github.com/trivigy/migrate/v2/internal/nub"
-	"github.com/trivigy/migrate/v2/internal/require"
+	"github.com/trivigy/migrate/v2/nub"
+	"github.com/trivigy/migrate/v2/require"
 	"github.com/trivigy/migrate/v2/types"
 )
 
