@@ -2,7 +2,6 @@ package migration
 
 import (
 	"fmt"
-	"os"
 	"sort"
 
 	"github.com/trivigy/migrate/v2/internal/store"
@@ -28,8 +27,7 @@ func (r common) GenerateMigrationPlan(
 	sortedRegistryMigrations := migrations
 	sortedDatabaseMigrations, err := db.Migrations.GetMigrationsSorted()
 	if err != nil {
-		fmt.Printf("%+v\n", err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	i := 0
