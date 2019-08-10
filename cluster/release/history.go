@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/trivigy/migrate/v2/config"
-	"github.com/trivigy/migrate/v2/internal/nub"
-	"github.com/trivigy/migrate/v2/internal/require"
+	"github.com/trivigy/migrate/v2/nub"
+	"github.com/trivigy/migrate/v2/require"
 	"github.com/trivigy/migrate/v2/types"
 )
 

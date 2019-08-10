@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/trivigy/migrate/v2/internal/nub"
+	"github.com/trivigy/migrate/v2/nub"
 )
 
 // Direction defines the type of the migration direction.
