@@ -123,6 +123,18 @@ func (r *Install) Run(out io.Writer, opts InstallOptions) error {
 						return err
 					}
 				}
+			case *v1core.Endpoints:
+				_, err := kubectl.CoreV1().
+					ConfigMaps(cfg.Namespace).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.CoreV1().
+						Endpoints(cfg.Namespace).
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
 			case *v1core.Service:
 				_, err := kubectl.CoreV1().
 					Services(cfg.Namespace).

@@ -100,20 +100,18 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 	}
 
 	table := tablewriter.NewWriter(out)
-	table.SetHeader([]string{"#", "Name", "Version", "Manifest", "Kind", "Status"})
+	table.SetHeader([]string{"#", "Name", "Version", "Kind", "Status"})
 	table.SetAutoWrapText(false)
 
 	sort.Sort(*cfg.Releases)
 	for i, rel := range *cfg.Releases {
 		for j, manifest := range rel.Manifests {
-			var name string
 			var kind string
 			var status string
 			switch manifest := manifest.(type) {
 			case *v1core.ConfigMap:
-				name = manifest.Name
 				kind = manifest.Kind
-				configMaps, err := kubectl.CoreV1().
+				result, err := kubectl.CoreV1().
 					ConfigMaps(cfg.Namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -123,14 +121,29 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				status, err = r.TrimmedYAML(configMaps)
+				status, err = r.TrimmedYAML(result)
+				if err != nil {
+					return err
+				}
+			case *v1core.Endpoints:
+				kind = manifest.Kind
+				result, err := kubectl.CoreV1().
+					Endpoints(cfg.Namespace).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(result)
 				if err != nil {
 					return err
 				}
 			case *v1core.Service:
-				name = manifest.Name
 				kind = manifest.Kind
-				service, err := kubectl.CoreV1().
+				result, err := kubectl.CoreV1().
 					Services(cfg.Namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -140,14 +153,13 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				status, err = r.TrimmedYAML(service)
+				status, err = r.TrimmedYAML(result)
 				if err != nil {
 					return err
 				}
 			case *v1apps.Deployment:
-				name = manifest.Name
 				kind = manifest.Kind
-				deployment, err := kubectl.AppsV1().
+				result, err := kubectl.AppsV1().
 					Deployments(cfg.Namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -157,7 +169,7 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				status, err = r.TrimmedYAML(deployment)
+				status, err = r.TrimmedYAML(result)
 				if err != nil {
 					return err
 				}
@@ -198,20 +210,19 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 							strconv.Itoa(i + 1),
 							rel.Name,
 							rel.Version.String(),
-							name,
 							kind,
 							line,
 						})
 					} else {
-						table.Append([]string{"", "", "", "", "", line})
+						table.Append([]string{"", "", "", "", line})
 					}
 				}
 			} else {
 				for k, line := range lines {
 					if k == 0 {
-						table.Append([]string{"", "", "", name, kind, line})
+						table.Append([]string{"", "", "", kind, line})
 					} else {
-						table.Append([]string{"", "", "", "", "", line})
+						table.Append([]string{"", "", "", "", line})
 					}
 				}
 			}
