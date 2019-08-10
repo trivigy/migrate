@@ -35,6 +35,7 @@ func (r *Database) NewCommand(name string) *cobra.Command {
 	cmd.AddCommand(
 		NewCreate(r.config).(*Create).NewCommand("create"),
 		NewDestroy(r.config).(*Destroy).NewCommand("destroy"),
+		NewSource(r.config).(*Source).NewCommand("source"),
 		migration.NewMigration(r.config).(*migration.Migration).NewCommand("migration"),
 	)
 

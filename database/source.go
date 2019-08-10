@@ -1,4 +1,4 @@
-package release
+package database
 
 import (
 	"fmt"
@@ -13,27 +13,27 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-// Delete represents the cluster release delete command object.
-type Delete struct {
-	config map[string]config.Cluster
+// Source represents the database source command object.
+type Source struct {
+	config map[string]config.Database
 }
 
-// NewDelete initializes a new cluster release delete command.
-func NewDelete(config map[string]config.Cluster) types.Command {
-	return &Delete{config: config}
+// NewSource initializes a new database source command.
+func NewSource(config map[string]config.Database) types.Command {
+	return &Source{config: config}
 }
 
-// DeleteOptions is used for executing the Run() command.
-type DeleteOptions struct {
+// SourceOptions is used for executing the Run() command.
+type SourceOptions struct {
 	Env string `json:"env" yaml:"env"`
 }
 
-// NewCommand creates a new cobra.Command, configures it, and returns it.
-func (r *Delete) NewCommand(name string) *cobra.Command {
+// NewCommand creates a new cobra.Command, configures it and returns it.
+func (r *Source) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "Stops a running release and removes all resources.",
-		Long:  "Stops a running release and removes all resources",
+		Short: "Print the data source name as a connection string.",
+		Long:  "Print the data source name as a connection string",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			env, err := cmd.Flags().GetString("env")
@@ -41,7 +41,7 @@ func (r *Delete) NewCommand(name string) *cobra.Command {
 				return errors.WithStack(err)
 			}
 
-			opts := DeleteOptions{Env: env}
+			opts := SourceOptions{Env: env}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
 		SilenceUsage: true,
@@ -60,7 +60,7 @@ func (r *Delete) NewCommand(name string) *cobra.Command {
 }
 
 // Execute runs the command.
-func (r *Delete) Execute(name string, out io.Writer, args []string) error {
+func (r *Source) Execute(name string, out io.Writer, args []string) error {
 	cmd := r.NewCommand(name)
 	cmd.SetOut(out)
 	cmd.SetArgs(args)
@@ -71,22 +71,26 @@ func (r *Delete) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r *Delete) validation(args []string) error {
+func (r *Source) validation(args []string) error {
 	if err := require.NoArgs(args); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Run is a starting point method for executing the cluster release delete
-// command.
-func (r *Delete) Run(out io.Writer, opts DeleteOptions) error {
+// Run is a starting point method for executing the source command.
+func (r *Source) Run(out io.Writer, opts SourceOptions) error {
 	cfg, ok := r.config[opts.Env]
 	if !ok {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
 
-	if err := cfg.Driver.Setup(out); err != nil {
+	source, err := cfg.Driver.Source()
+	if err != nil {
+		return err
+	}
+
+	if _, err := out.Write([]byte(source + "\n")); err != nil {
 		return err
 	}
 	return nil
