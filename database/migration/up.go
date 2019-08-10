@@ -3,6 +3,7 @@ package migration
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"sort"
 	"time"
 
@@ -31,7 +32,7 @@ func NewUp(config map[string]config.Database) types.Command {
 // UpOptions is used for executing the Run() command.
 type UpOptions struct {
 	Env    string `json:"env" yaml:"env"`
-	Num    int    `json:"num" yaml:"num"`
+	Limit  int    `json:"limit" yaml:"limit"`
 	DryRun bool   `json:"dryRun" yaml:"dryRun"`
 }
 
@@ -48,7 +49,7 @@ func (r *Up) NewCommand(name string) *cobra.Command {
 				return errors.WithStack(err)
 			}
 
-			num, err := cmd.Flags().GetInt("num")
+			limit, err := cmd.Flags().GetInt("limit")
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -58,7 +59,7 @@ func (r *Up) NewCommand(name string) *cobra.Command {
 				return errors.WithStack(err)
 			}
 
-			opts := UpOptions{Env: env, Num: num, DryRun: dryRun}
+			opts := UpOptions{Env: env, Limit: limit, DryRun: dryRun}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
 		SilenceUsage: true,
@@ -74,7 +75,7 @@ func (r *Up) NewCommand(name string) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.IntP(
-		"num", "n", 1,
+		"limit", "l", 1,
 		"Indicate `NUMBER` of migrations to apply. Set `0` for all.",
 	)
 	flags.Bool(
@@ -132,8 +133,8 @@ func (r *Up) Run(out io.Writer, opts UpOptions) error {
 	}
 
 	steps := len(migrationPlan)
-	if opts.Num > 0 && opts.Num <= steps {
-		steps = opts.Num
+	if opts.Limit > 0 && opts.Limit <= steps {
+		steps = opts.Limit
 	}
 
 	if opts.DryRun {

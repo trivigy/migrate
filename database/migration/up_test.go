@@ -25,7 +25,7 @@ func (r *MigrationSuite) TestUpCommand() {
 		{
 			false, "",
 			bytes.NewBuffer(nil),
-			[]string{"-n", "0", "--dry-run"},
+			[]string{"-l", "0", "--dry-run"},
 			"==> migration \"0.0.1_create-unittest-table\" (up)\n" +
 				"CREATE TABLE unittests (value text);\n" +
 				"==> migration \"0.0.2_seed-dummy-data\" (up)\n" +
@@ -36,13 +36,13 @@ func (r *MigrationSuite) TestUpCommand() {
 		{
 			false, "",
 			bytes.NewBuffer(nil),
-			[]string{"-n", "1"},
+			[]string{"-l", "1"},
 			"migration \"0.0.1_create-unittest-table\" successfully applied (up)\n",
 		},
 		{
 			false, "",
 			bytes.NewBuffer(nil),
-			[]string{"-n", "0"},
+			[]string{"-l", "0"},
 			"migration \"0.0.2_seed-dummy-data\" successfully applied (up)\n" +
 				"migration \"0.0.3_seed-more-dummy-data\" successfully applied (up)\n",
 		},

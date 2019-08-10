@@ -79,7 +79,7 @@ func (r *MigrationSuite) TearDownSuite() {
 func (r *MigrationSuite) TearDownTest() {
 	buffer := bytes.NewBuffer(nil)
 	down := NewDown(r.config)
-	assert.Nil(r.T(), down.Execute("down", buffer, []string{"-n", "0"}))
+	assert.Nil(r.T(), down.Execute("down", buffer, []string{"-l", "0"}))
 }
 
 func (r *MigrationSuite) TestDatabaseCommand() {
