@@ -39,9 +39,6 @@ func (r common) GetKubeCtl(cfg config.Cluster) (*kubernetes.Clientset, error) {
 				},
 				ObjectMeta: v1meta.ObjectMeta{
 					Name: cfg.Namespace,
-					Labels: map[string]string{
-						"name": cfg.Namespace,
-					},
 				},
 			})
 		if err != nil {

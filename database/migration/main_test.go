@@ -22,7 +22,7 @@ type MigrationSuite struct {
 }
 
 func (r *MigrationSuite) SetupSuite() {
-	migrations := []types.Migration{
+	migrations := &types.Migrations{
 		{
 			Name: "create-unittest-table",
 			Tag:  semver.Version{Major: 0, Minor: 0, Patch: 1},

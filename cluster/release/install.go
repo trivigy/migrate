@@ -97,8 +97,8 @@ func (r *Install) Run(out io.Writer, opts InstallOptions) error {
 		return err
 	}
 
-	sort.Sort(cfg.Releases)
-	for _, rel := range cfg.Releases {
+	sort.Sort(*cfg.Releases)
+	for _, rel := range *cfg.Releases {
 		for _, manifest := range rel.Manifests {
 			switch manifest := manifest.(type) {
 			case *v1core.ConfigMap:

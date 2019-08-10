@@ -155,7 +155,7 @@ func (r *Generate) Run(out io.Writer, opts GenerateOptions) error {
 
 	sort.Sort(cfg.Releases)
 	tags := semver.Versions{semver.Version{}}
-	for _, rgMig := range cfg.Releases {
+	for _, rgMig := range *cfg.Releases {
 		tags = append(tags, rgMig.Version)
 	}
 

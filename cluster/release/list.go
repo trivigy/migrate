@@ -103,8 +103,8 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 	table.SetHeader([]string{"#", "Name", "Version", "Manifest", "Kind", "Status"})
 	table.SetAutoWrapText(false)
 
-	sort.Sort(cfg.Releases)
-	for i, rel := range cfg.Releases {
+	sort.Sort(*cfg.Releases)
+	for i, rel := range *cfg.Releases {
 		for j, manifest := range rel.Manifests {
 			var name string
 			var kind string
@@ -193,7 +193,7 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 		}
 	}
 
-	if len(cfg.Releases) > 0 {
+	if len(*cfg.Releases) > 0 {
 		table.Render()
 	}
 

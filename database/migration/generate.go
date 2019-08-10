@@ -154,7 +154,7 @@ func (r *Generate) Run(out io.Writer, opts GenerateOptions) error {
 
 	sort.Sort(cfg.Migrations)
 	tags := semver.Versions{semver.Version{}}
-	for _, rgMig := range cfg.Migrations {
+	for _, rgMig := range *cfg.Migrations {
 		tags = append(tags, rgMig.Tag)
 	}
 
