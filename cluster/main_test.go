@@ -1,54 +1,89 @@
 package cluster
 
 import (
+	"bytes"
+	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/Pallinder/go-randomdata"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/trivigy/migrate/v2/config"
+	"github.com/trivigy/migrate/v2/driver/provider"
 )
 
 type ClusterSuite struct {
 	suite.Suite
-	name string
+	config map[string]config.Cluster
 }
 
-func (r *ClusterSuite) SetupTest() {
-	r.name = "cluster"
+func (r *ClusterSuite) SetupSuite() {
+	r.config = map[string]config.Cluster{
+		"default": {
+			Driver: provider.Kind{
+				Name: strings.ToLower(randomdata.SillyName()),
+			},
+		},
+	}
+}
+
+func (r *ClusterSuite) TearDownSuite() {
+	buffer := bytes.NewBuffer(nil)
+	assert.Nil(r.T(), r.config["default"].Driver.TearDown(buffer))
 }
 
 func (r *ClusterSuite) TestClusterCommand() {
-	// command := NewCluster(map[string]config.Cluster{"default": {}})
-	//
-	// buffer := bytes.NewBuffer(nil)
-	// if err := command.Execute(r.name, buffer, []string{"--help"}); err != nil {
-	// 	os.Exit(1)
-	// }
-	// if err := command.Execute(r.name, buffer, []string{"create", "--help"}); err != nil {
-	// 	os.Exit(1)
-	// }
+	testCases := []struct {
+		shouldFail bool
+		onFail     string
+		buffer     *bytes.Buffer
+		args       []string
+		output     string
+	}{
+		{
+			false, "",
+			bytes.NewBuffer(nil),
+			[]string{"--help"},
+			"Kubernetes cluster release and deployment controller\n" +
+				"\n" +
+				"Usage:\n" +
+				"  cluster [command]\n" +
+				"\n" +
+				"Available Commands:\n" +
+				"  create      Initializes a new kubernetes cluster.\n" +
+				"  destroy     Stops an existing running kubernetes cluster.\n" +
+				"  release     Manages the lifecycle of a kubernetes release.\n" +
+				"\n" +
+				"Flags:\n" +
+				"  -e, --env ENV   Run with env ENV configurations. (default \"default\")\n" +
+				"      --help      Show help information.\n" +
+				"\n" +
+				"Use \"cluster [command] --help\" for more information about a command.\n",
+		},
+	}
 
-	// err := Append(dto.Migration{
-	// 	Tag: semver.Version{Major: 0, Minor: 0, Patch: 1},
-	// 	Up: []dto.Operation{
-	// 		{Query: `CREATE TABLE unittest1 (id int)`},
-	// 	},
-	// 	Down: []dto.Operation{
-	// 		{Query: `DROP TABLE unittest1`},
-	// 	},
-	// })
-	// assert.Nil(r.T(), err)
-	//
-	// // @formatter:off
-	// expected :=
-	// 	"+-------+---------+\n" +
-	// 		"|  TAG  | APPLIED |\n" +
-	// 		"+-------+---------+\n" +
-	// 		"| 0.0.1 | pending |\n" +
-	// 		"+-------+---------+\n"
-	// // @formatter:on
-	//
-	// output, err := ExecuteWithArgs("status", "--env", "testing")
-	// assert.Equal(r.T(), expected, output)
-	// assert.Nil(r.T(), err)
+	for i, testCase := range testCases {
+		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
+		runner := func() {
+			command := NewCluster(r.config)
+			err := command.Execute("cluster", testCase.buffer, testCase.args)
+			if err != nil {
+				panic(testCase.buffer.String())
+			}
+
+			if testCase.output != testCase.buffer.String() {
+				panic(testCase.buffer.String())
+			}
+		}
+
+		if testCase.shouldFail {
+			assert.PanicsWithValue(r.T(), testCase.onFail, runner, failMsg)
+		} else {
+			assert.NotPanics(r.T(), runner, failMsg)
+		}
+	}
 }
 
 func TestClusterSuite(t *testing.T) {
