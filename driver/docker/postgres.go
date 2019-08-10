@@ -179,11 +179,6 @@ func (r Postgres) TearDown(out io.Writer) error {
 	return nil
 }
 
-// Name returns the driver name.
-func (r Postgres) Name() string {
-	return "postgres"
-}
-
 // Source returns the data source name for the driver.
 func (r Postgres) Source() (string, error) {
 	docker, err := client.NewClientWithOpts(

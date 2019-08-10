@@ -113,7 +113,12 @@ func (r *Down) Run(out io.Writer, opts DownOptions) error {
 		return err
 	}
 
-	db, err := store.Open(cfg.Driver.Name(), source)
+	u, err := url.Parse(source)
+	if err != nil {
+		return err
+	}
+
+	db, err := store.Open(u.Scheme, source)
 	if err != nil {
 		return err
 	}
