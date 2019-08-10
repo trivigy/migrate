@@ -1,6 +1,8 @@
 package types
 
 import (
+	"fmt"
+
 	"github.com/blang/semver"
 )
 
@@ -9,6 +11,9 @@ import (
 type Release struct {
 	Name      string         `json:"name" yaml:"name"`
 	Version   semver.Version `json:"tag" yaml:"tag"`
-	Values    interface{}    `json:"values" yaml:"values"`
 	Manifests []interface{}  `json:"manifests" yaml:"manifests"`
+}
+
+func (r Release) String() string {
+	return fmt.Sprintf("%+v", []string{r.Name, r.Version.String()})
 }
