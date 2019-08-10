@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -32,63 +33,63 @@ func (c PsqlDSN) Driver() string {
 
 // Source reassembles the parsed PostgreSQL connection string.
 func (c PsqlDSN) Source() string {
-	u := make([]string, 0)
+	u := url.URL{Scheme: "postgres"}
 
+	// u := make([]string, 0)
+
+	var host string
 	if c.Host != "" {
-		u = append(u, "host="+escaper.Replace(c.Host))
+		host = escaper.Replace(c.Host)
 	}
-
 	if c.Port != "" {
-		u = append(u, "port="+escaper.Replace(c.Port))
-	} else {
-		u = append(u, fmt.Sprintf("port=%d", 5432))
+		host += ":" + escaper.Replace(c.Port)
 	}
-
-	if c.User != "" {
-		u = append(u, "user="+escaper.Replace(c.User))
-	}
+	u.Host = host
 
 	if c.Password != "" {
-		u = append(u, "password="+escaper.Replace(c.Password))
+		if c.User != "" {
+			u.User = url.UserPassword(escaper.Replace(c.User), escaper.Replace(c.Password))
+		}
+	} else {
+		if c.User != "" {
+			u.User = url.User(escaper.Replace(c.User))
+		}
 	}
 
 	if c.DBName != "" {
-		u = append(u, "dbname="+escaper.Replace(c.DBName))
+		u.Path = "/" + escaper.Replace(c.DBName)
 	}
 
+	q := u.Query()
 	if c.SSLMode != "" {
 		for _, valid := range validSSLModes {
 			if valid == c.SSLMode {
-				u = append(u, "sslmode="+escaper.Replace(c.SSLMode))
+				q.Set("sslmode", escaper.Replace(c.SSLMode))
 			}
 		}
 	} else {
-		u = append(u, "sslmode=disable")
+		q.Set("sslmode", "disable")
 	}
 
 	if c.FallbackApplicationName != "" {
-		u = append(u, "fallback_application_name="+escaper.Replace(c.FallbackApplicationName))
+		q.Set("fallback_application_name", escaper.Replace(c.FallbackApplicationName))
 	}
 
 	if c.ConnectTimeout != 0 {
-		u = append(u, fmt.Sprintf("connect_timeout=%d", c.ConnectTimeout))
+		q.Set("connect_timeout", fmt.Sprintf("%d", c.ConnectTimeout))
 	}
 
 	if c.SSLCert != "" {
-		u = append(u, "sslcert="+escaper.Replace(c.SSLCert))
+		q.Set("sslcert", escaper.Replace(c.SSLCert))
 	}
 
 	if c.SSLKey != "" {
-		u = append(u, "sslkey="+escaper.Replace(c.SSLKey))
+		q.Set("sslkey", escaper.Replace(c.SSLKey))
 	}
 
 	if c.SSLRootCert != "" {
-		u = append(u, "sslrootcert="+escaper.Replace(c.SSLRootCert))
+		q.Set("sslrootcert", escaper.Replace(c.SSLRootCert))
 	}
-
-	if len(u) == 0 {
-		return ""
-	}
-
-	return strings.Join(u, " ")
+	u.RawQuery = q.Encode()
+	return u.String()
 }
