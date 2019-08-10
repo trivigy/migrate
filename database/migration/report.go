@@ -152,6 +152,10 @@ func (r *Report) Run(out io.Writer, opts UpOptions) error {
 		}
 
 	}
-	table.Render()
+
+	if len(*cfg.Migrations) > 0 {
+		table.Render()
+	}
+
 	return nil
 }
