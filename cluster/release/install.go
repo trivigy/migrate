@@ -32,6 +32,7 @@ func NewInstall(config map[string]config.Cluster) types.Command {
 // InstallOptions is used for executing the Run() command.
 type InstallOptions struct {
 	Env string `json:"env" yaml:"env"`
+	Seq int    `json:"seq" yaml:"seq"`
 }
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
@@ -47,7 +48,12 @@ func (r *Install) NewCommand(name string) *cobra.Command {
 				return errors.WithStack(err)
 			}
 
-			opts := InstallOptions{Env: env}
+			seq, err := cmd.Flags().GetInt("seq")
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			opts := InstallOptions{Env: env, Seq: seq}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
 		SilenceUsage: true,
@@ -62,6 +68,10 @@ func (r *Install) NewCommand(name string) *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
+	flags.IntP(
+		"seq", "s", 0,
+		"Indicate `ID` of the release to apply. All applied by default.",
+	)
 	return cmd
 }
 
