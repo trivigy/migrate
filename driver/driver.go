@@ -21,6 +21,5 @@ type Cluster interface {
 // Database defines the interface for a database driver.
 type Database interface {
 	Driver
-	Name() string
 	Source() (string, error)
 }
