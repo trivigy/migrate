@@ -92,7 +92,7 @@ func (r *Install) Run(out io.Writer, opts InstallOptions) error {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
 
-	kubectl, err := r.GetKubeCtl(cfg)
+	kubectl, err := r.GetKubeCtl(&cfg)
 	if err != nil {
 		return err
 	}

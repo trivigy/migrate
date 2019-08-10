@@ -15,7 +15,7 @@ import (
 
 type common struct{}
 
-func (r common) GetKubeCtl(cfg config.Cluster) (*kubernetes.Clientset, error) {
+func (r common) GetKubeCtl(cfg *config.Cluster) (*kubernetes.Clientset, error) {
 	kubeConfig, err := cfg.Driver.KubeConfig()
 	if err != nil {
 		return nil, err
@@ -24,6 +24,10 @@ func (r common) GetKubeCtl(cfg config.Cluster) (*kubernetes.Clientset, error) {
 	kubectl, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, err
+	}
+
+	if cfg.Namespace == "" {
+		cfg.Namespace = "default"
 	}
 
 	_, err = kubectl.CoreV1().
