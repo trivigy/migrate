@@ -3,6 +3,7 @@ package migration
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"sort"
 	"time"
 

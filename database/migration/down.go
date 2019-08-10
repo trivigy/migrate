@@ -3,6 +3,7 @@ package migration
 import (
 	"fmt"
 	"io"
+	"net/url"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -29,7 +30,7 @@ func NewDown(config map[string]config.Database) types.Command {
 // DownOptions is used for executing the Run() command.
 type DownOptions struct {
 	Env    string `json:"env" yaml:"env"`
-	Num    int    `json:"num" yaml:"num"`
+	limit  int    `json:"limit" yaml:"limit"`
 	DryRun bool   `json:"dryRun" yaml:"dryRun"`
 }
 
@@ -46,7 +47,7 @@ func (r *Down) NewCommand(name string) *cobra.Command {
 				return errors.WithStack(err)
 			}
 
-			num, err := cmd.Flags().GetInt("num")
+			limit, err := cmd.Flags().GetInt("limit")
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -56,7 +57,7 @@ func (r *Down) NewCommand(name string) *cobra.Command {
 				return errors.WithStack(err)
 			}
 
-			opts := DownOptions{Env: env, Num: num, DryRun: dryRun}
+			opts := DownOptions{Env: env, limit: limit, DryRun: dryRun}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
 		SilenceUsage: true,
@@ -72,7 +73,7 @@ func (r *Down) NewCommand(name string) *cobra.Command {
 	flags := cmd.Flags()
 	flags.SortFlags = false
 	flags.IntP(
-		"num", "n", 1,
+		"limit", "l", 1,
 		"Indicate `NUMBER` of migrations to apply. Set `0` for all.",
 	)
 	flags.Bool(
@@ -129,8 +130,8 @@ func (r *Down) Run(out io.Writer, opts DownOptions) error {
 	}
 
 	steps := len(migrationPlan)
-	if opts.Num > 0 && opts.Num <= steps {
-		steps = opts.Num
+	if opts.limit > 0 && opts.limit <= steps {
+		steps = opts.limit
 	}
 
 	if opts.DryRun {
