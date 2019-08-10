@@ -94,7 +94,7 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
 	}
 
-	kubectl, err := r.GetKubeCtl(cfg)
+	kubectl, err := r.GetKubeCtl(&cfg)
 	if err != nil {
 		return err
 	}
