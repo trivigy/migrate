@@ -41,7 +41,7 @@ func (r *Destroy) NewCommand(name string) *cobra.Command {
 				return errors.WithStack(err)
 			}
 
-			opts := CreateOptions{Env: env}
+			opts := DestroyOptions{Env: env}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
 		SilenceUsage: true,
@@ -79,7 +79,7 @@ func (r *Destroy) validation(args []string) error {
 }
 
 // Run is a starting point method for executing the destroy command.
-func (r *Destroy) Run(out io.Writer, opts CreateOptions) error {
+func (r *Destroy) Run(out io.Writer, opts DestroyOptions) error {
 	cfg, ok := r.config[opts.Env]
 	if !ok {
 		return fmt.Errorf("missing %q environment configuration", opts.Env)
