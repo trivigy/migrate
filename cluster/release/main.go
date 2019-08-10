@@ -35,7 +35,7 @@ func (r *Release) NewCommand(name string) *cobra.Command {
 		NewGenerate(r.config).(*Generate).NewCommand("generate"),
 		NewInstall(r.config).(*Install).NewCommand("install"),
 		NewUpgrade(r.config).(*Upgrade).NewCommand("upgrade"),
-		NewDelete(r.config).(*Delete).NewCommand("delete"),
+		NewUninstall(r.config).(*Uninstall).NewCommand("uninstall"),
 		NewList(r.config).(*List).NewCommand("list"),
 		NewInspect(r.config).(*Inspect).NewCommand("inspect"),
 		NewHistory(r.config).(*History).NewCommand("history"),
