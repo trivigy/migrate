@@ -30,7 +30,7 @@ func NewDown(config map[string]config.Database) types.Command {
 // DownOptions is used for executing the Run() command.
 type DownOptions struct {
 	Env    string `json:"env" yaml:"env"`
-	limit  int    `json:"limit" yaml:"limit"`
+	Limit  int    `json:"limit" yaml:"limit"`
 	DryRun bool   `json:"dryRun" yaml:"dryRun"`
 }
 
@@ -57,7 +57,7 @@ func (r *Down) NewCommand(name string) *cobra.Command {
 				return errors.WithStack(err)
 			}
 
-			opts := DownOptions{Env: env, limit: limit, DryRun: dryRun}
+			opts := DownOptions{Env: env, Limit: limit, DryRun: dryRun}
 			return r.Run(cmd.OutOrStdout(), opts)
 		},
 		SilenceUsage: true,
@@ -130,8 +130,8 @@ func (r *Down) Run(out io.Writer, opts DownOptions) error {
 	}
 
 	steps := len(migrationPlan)
-	if opts.limit > 0 && opts.limit <= steps {
-		steps = opts.limit
+	if opts.Limit > 0 && opts.Limit <= steps {
+		steps = opts.Limit
 	}
 
 	if opts.DryRun {
