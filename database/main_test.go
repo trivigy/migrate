@@ -58,6 +58,7 @@ func (r *DatabaseSuite) TestDatabaseCommand() {
 				"  create      Initializes a new instance of a database.\n" +
 				"  destroy     Stops a running instance of a database.\n" +
 				"  migration   Manages the lifecycle of a database migration.\n" +
+				"  source      Print the data source name as a connection string.\n" +
 				"\n" +
 				"Flags:\n" +
 				"  -e, --env ENV   Run with env ENV configurations. (default \"default\")\n" +
@@ -77,6 +78,7 @@ func (r *DatabaseSuite) TestDatabaseCommand() {
 			}
 
 			if testCase.output != testCase.buffer.String() {
+				fmt.Printf("%q\n", testCase.buffer.String())
 				panic(testCase.buffer.String())
 			}
 		}
