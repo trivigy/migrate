@@ -153,7 +153,7 @@ func (r *Generate) Run(out io.Writer, opts GenerateOptions) error {
 		return fmt.Errorf("directory %q not found", opts.Dir)
 	}
 
-	sort.Sort(cfg.Releases)
+	sort.Sort(*cfg.Releases)
 	tags := semver.Versions{semver.Version{}}
 	for _, rgMig := range *cfg.Releases {
 		tags = append(tags, rgMig.Version)
