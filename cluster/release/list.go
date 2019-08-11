@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/cobra"
 	v1apps "k8s.io/api/apps/v1"
 	v1core "k8s.io/api/core/v1"
+	v1beta1policy "k8s.io/api/policy/v1beta1"
+	v1rbac "k8s.io/api/rbac/v1"
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -109,10 +111,58 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 			var kind string
 			var status string
 			switch manifest := manifest.(type) {
+			case *v1core.Namespace:
+				kind = manifest.Kind
+				result, err := kubectl.CoreV1().
+					Namespaces().
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(result)
+				if err != nil {
+					return err
+				}
+			case *v1core.Pod:
+				kind = manifest.Kind
+				result, err := kubectl.CoreV1().
+					Pods(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(result)
+				if err != nil {
+					return err
+				}
+			case *v1core.ServiceAccount:
+				kind = manifest.Kind
+				result, err := kubectl.CoreV1().
+					ServiceAccounts(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(result)
+				if err != nil {
+					return err
+				}
 			case *v1core.ConfigMap:
 				kind = manifest.Kind
 				result, err := kubectl.CoreV1().
-					ConfigMaps(cfg.Namespace).
+					ConfigMaps(r.Namespace(cfg, manifest.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -128,7 +178,7 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 			case *v1core.Endpoints:
 				kind = manifest.Kind
 				result, err := kubectl.CoreV1().
-					Endpoints(cfg.Namespace).
+					Endpoints(r.Namespace(cfg, manifest.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -144,7 +194,103 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 			case *v1core.Service:
 				kind = manifest.Kind
 				result, err := kubectl.CoreV1().
-					Services(cfg.Namespace).
+					Services(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(result)
+				if err != nil {
+					return err
+				}
+			case *v1rbac.Role:
+				kind = manifest.Kind
+				result, err := kubectl.RbacV1().
+					Roles(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(result)
+				if err != nil {
+					return err
+				}
+			case *v1rbac.RoleBinding:
+				kind = manifest.Kind
+				result, err := kubectl.RbacV1().
+					RoleBindings(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(result)
+				if err != nil {
+					return err
+				}
+			case *v1rbac.ClusterRole:
+				kind = manifest.Kind
+				result, err := kubectl.RbacV1().
+					ClusterRoles().
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(result)
+				if err != nil {
+					return err
+				}
+			case *v1rbac.ClusterRoleBinding:
+				kind = manifest.Kind
+				result, err := kubectl.RbacV1().
+					ClusterRoleBindings().
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(result)
+				if err != nil {
+					return err
+				}
+			case *v1beta1policy.PodSecurityPolicy:
+				kind = manifest.Kind
+				result, err := kubectl.PolicyV1beta1().
+					PodSecurityPolicies().
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				status, err = r.TrimmedYAML(result)
+				if err != nil {
+					return err
+				}
+			case *v1apps.DaemonSet:
+				kind = manifest.Kind
+				result, err := kubectl.AppsV1().
+					DaemonSets(r.Namespace(cfg, manifest.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -160,7 +306,7 @@ func (r *List) Run(out io.Writer, opts ListOptions) error {
 			case *v1apps.Deployment:
 				kind = manifest.Kind
 				result, err := kubectl.AppsV1().
-					Deployments(cfg.Namespace).
+					Deployments(r.Namespace(cfg, manifest.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)

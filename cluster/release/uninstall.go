@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 	v1apps "k8s.io/api/apps/v1"
 	v1core "k8s.io/api/core/v1"
+	v1beta1policy "k8s.io/api/policy/v1beta1"
+	v1rbac "k8s.io/api/rbac/v1"
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -101,9 +103,9 @@ func (r *Uninstall) Run(out io.Writer, opts UninstallOptions) error {
 	for _, rel := range *cfg.Releases {
 		for _, manifest := range rel.Manifests {
 			switch manifest := manifest.(type) {
-			case *v1core.ConfigMap:
+			case *v1core.Namespace:
 				_, err := kubectl.CoreV1().
-					ConfigMaps(cfg.Namespace).
+					Namespaces().
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -112,14 +114,62 @@ func (r *Uninstall) Run(out io.Writer, opts UninstallOptions) error {
 				}
 
 				err = kubectl.CoreV1().
-					ConfigMaps(cfg.Namespace).
+					Namespaces().
+					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1core.Pod:
+				_, err := kubectl.CoreV1().
+					Pods(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				err = kubectl.CoreV1().
+					Pods(r.Namespace(cfg, manifest.Namespace)).
+					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1core.ServiceAccount:
+				_, err := kubectl.CoreV1().
+					ServiceAccounts(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				err = kubectl.CoreV1().
+					ServiceAccounts(r.Namespace(cfg, manifest.Namespace)).
+					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1core.ConfigMap:
+				_, err := kubectl.CoreV1().
+					ConfigMaps(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				err = kubectl.CoreV1().
+					ConfigMaps(r.Namespace(cfg, manifest.Namespace)).
 					Delete(manifest.Name, &v1meta.DeleteOptions{})
 				if err != nil {
 					return err
 				}
 			case *v1core.Endpoints:
 				_, err := kubectl.CoreV1().
-					Endpoints(cfg.Namespace).
+					Endpoints(r.Namespace(cfg, manifest.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -128,14 +178,14 @@ func (r *Uninstall) Run(out io.Writer, opts UninstallOptions) error {
 				}
 
 				err = kubectl.CoreV1().
-					Endpoints(cfg.Namespace).
+					Endpoints(r.Namespace(cfg, manifest.Namespace)).
 					Delete(manifest.Name, &v1meta.DeleteOptions{})
 				if err != nil {
 					return err
 				}
 			case *v1core.Service:
 				_, err := kubectl.CoreV1().
-					Services(cfg.Namespace).
+					Services(r.Namespace(cfg, manifest.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -144,14 +194,94 @@ func (r *Uninstall) Run(out io.Writer, opts UninstallOptions) error {
 				}
 
 				err = kubectl.CoreV1().
-					Services(cfg.Namespace).
+					Services(r.Namespace(cfg, manifest.Namespace)).
 					Delete(manifest.Name, &v1meta.DeleteOptions{})
 				if err != nil {
 					return err
 				}
-			case *v1apps.Deployment:
+			case *v1rbac.Role:
+				_, err := kubectl.RbacV1().
+					Roles(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				err = kubectl.RbacV1().
+					Roles(r.Namespace(cfg, manifest.Namespace)).
+					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1rbac.RoleBinding:
+				_, err := kubectl.RbacV1().
+					RoleBindings(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				err = kubectl.RbacV1().
+					RoleBindings(r.Namespace(cfg, manifest.Namespace)).
+					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1rbac.ClusterRole:
+				_, err := kubectl.RbacV1().
+					ClusterRoles().
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				err = kubectl.RbacV1().
+					ClusterRoles().
+					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1rbac.ClusterRoleBinding:
+				_, err := kubectl.RbacV1().
+					ClusterRoleBindings().
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				err = kubectl.RbacV1().
+					ClusterRoleBindings().
+					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1beta1policy.PodSecurityPolicy:
+				_, err := kubectl.PolicyV1beta1().
+					PodSecurityPolicies().
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				err = kubectl.PolicyV1beta1().
+					PodSecurityPolicies().
+					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1apps.DaemonSet:
 				_, err := kubectl.AppsV1().
-					Deployments(cfg.Namespace).
+					DaemonSets(r.Namespace(cfg, manifest.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -160,7 +290,23 @@ func (r *Uninstall) Run(out io.Writer, opts UninstallOptions) error {
 				}
 
 				err = kubectl.AppsV1().
-					Deployments(cfg.Namespace).
+					DaemonSets(r.Namespace(cfg, manifest.Namespace)).
+					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1apps.Deployment:
+				_, err := kubectl.AppsV1().
+					Deployments(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				err = kubectl.AppsV1().
+					Deployments(r.Namespace(cfg, manifest.Namespace)).
 					Delete(manifest.Name, &v1meta.DeleteOptions{})
 				if err != nil {
 					return err
