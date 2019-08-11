@@ -8,5 +8,5 @@ import (
 // Database defines database configuration to use for database migrations.
 type Database struct {
 	Migrations *types.Migrations `json:"migrations" yaml:"migrations"`
-	Driver     driver.Database  `json:"driver" yaml:"driver"`
+	Driver     driver.Database   `json:"driver" yaml:"driver"`
 }

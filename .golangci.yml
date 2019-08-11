@@ -19,6 +19,7 @@ linters:
     - unused
     - errcheck
     - dupl
+    - gocyclo
 
 issues:
   exclude-use-default: false
