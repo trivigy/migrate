@@ -9,7 +9,7 @@ import (
 
 func (r *ClusterSuite) TestDestroyCommand() {
 	buffer := bytes.NewBuffer(nil)
-	assert.Nil(r.T(), r.config["default"].Driver.Setup(buffer))
+	assert.Nil(r.T(), r.config["destroy"].Driver.Setup(buffer))
 
 	testCases := []struct {
 		shouldFail bool
@@ -20,7 +20,7 @@ func (r *ClusterSuite) TestDestroyCommand() {
 		{
 			false, "",
 			bytes.NewBuffer(nil),
-			[]string{},
+			[]string{"-e", "destroy"},
 		},
 	}
 

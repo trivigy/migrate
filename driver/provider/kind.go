@@ -109,7 +109,6 @@ func (r Kind) Execute(out io.Writer, args []string) error {
 	}()
 
 	cmd := kind.NewCommand()
-	cmd.SetOut(out)
 	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
 		return err

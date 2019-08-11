@@ -31,39 +31,26 @@ func (r *ReleaseSuite) SetupSuite() {
 			Name:    "create-unittest-cluster",
 			Version: semver.Version{Major: 0, Minor: 0, Patch: 1},
 			Manifests: []interface{}{
-				&v1core.ConfigMap{
-					TypeMeta: v1meta.TypeMeta{
-						APIVersion: "v1",
-						Kind:       "ConfigMap",
-					},
-					ObjectMeta: v1meta.ObjectMeta{
-						Name: "unittest",
-					},
-					Data: map[string]string{
-						"hello": "world",
-					},
-				},
 				&v1core.Service{
 					TypeMeta: v1meta.TypeMeta{
 						APIVersion: "v1",
 						Kind:       "Service",
 					},
 					ObjectMeta: v1meta.ObjectMeta{
-						Name: "unittest",
+						Name: "locker",
+						Labels: map[string]string{
+							"app": "locker",
+						},
 					},
 					Spec: v1core.ServiceSpec{
-						Type: v1core.ServiceTypeLoadBalancer,
 						Ports: []v1core.ServicePort{
 							{
-								Port: 80,
-								TargetPort: intstr.IntOrString{
-									Type:   intstr.String,
-									StrVal: "8080",
-								},
+								Port:       80,
+								TargetPort: intstr.FromInt(80),
 							},
 						},
 						Selector: map[string]string{
-							"app": "unittest",
+							"app": "locker",
 						},
 					},
 				},
@@ -91,11 +78,11 @@ func (r *ReleaseSuite) SetupSuite() {
 							Spec: v1core.PodSpec{
 								Containers: []v1core.Container{
 									{
-										Name:  "hello-kubernetes",
-										Image: "paulbouwer/hello-kubernetes:1.5",
+										Name:  "unittest",
+										Image: "nginx:latest",
 										Ports: []v1core.ContainerPort{
 											{
-												ContainerPort: 8080,
+												ContainerPort: 80,
 											},
 										},
 									},
@@ -151,12 +138,12 @@ func (r *ReleaseSuite) TestReleaseCommand() {
 				"  release [command]\n" +
 				"\n" +
 				"Available Commands:\n" +
-				"  delete      Stops a running release and removes all resources.\n" +
 				"  generate    Adds a new release template.\n" +
 				"  history     Prints revisions history of deployed releases.\n" +
 				"  inspect     Prints release resources detail information.\n" +
 				"  install     Deploys release resources on running cluster.\n" +
 				"  list        List registered releases with states information.\n" +
+				"  uninstall   Stops a running release and removes the resources.\n" +
 				"  upgrade     Redeploy a modified release and track revision version.\n" +
 				"\n" +
 				"Flags:\n" +
@@ -177,6 +164,7 @@ func (r *ReleaseSuite) TestReleaseCommand() {
 			}
 
 			if testCase.output != testCase.buffer.String() {
+				fmt.Printf("%q\n", testCase.buffer.String())
 				panic(testCase.buffer.String())
 			}
 		}

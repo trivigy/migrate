@@ -17,7 +17,7 @@ func (r *ClusterSuite) TestCreateCommand() {
 		{
 			false, "",
 			bytes.NewBuffer(nil),
-			[]string{},
+			[]string{"-e", "create"},
 		},
 	}
 
@@ -39,5 +39,5 @@ func (r *ClusterSuite) TestCreateCommand() {
 	}
 
 	buffer := bytes.NewBuffer(nil)
-	assert.Nil(r.T(), r.config["default"].Driver.TearDown(buffer))
+	assert.Nil(r.T(), r.config["create"].Driver.TearDown(buffer))
 }
