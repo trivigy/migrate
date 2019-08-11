@@ -53,9 +53,7 @@ func (r *ReleasesSuite) TestReleases_Sort() {
 	for i, testCase := range testCases {
 		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
 		runner := func() {
-			fmt.Printf("before: %+v\n", testCase.releases)
 			sort.Sort(testCase.releases)
-			fmt.Printf("after: %+v\n", testCase.releases)
 			for i := range testCase.order {
 				if testCase.order[i][0] != (*testCase.releases)[i].Name ||
 					testCase.order[i][1] != (*testCase.releases)[i].Version.String() {
