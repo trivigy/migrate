@@ -26,12 +26,20 @@ func (r *ClusterSuite) SetupSuite() {
 				Name: strings.ToLower(randomdata.SillyName()),
 			},
 		},
+		"create": {
+			Driver: provider.Kind{
+				Name: strings.ToLower(randomdata.SillyName()),
+			},
+		},
+		"destroy": {
+			Driver: provider.Kind{
+				Name: strings.ToLower(randomdata.SillyName()),
+			},
+		},
 	}
 }
 
 func (r *ClusterSuite) TearDownSuite() {
-	buffer := bytes.NewBuffer(nil)
-	assert.Nil(r.T(), r.config["default"].Driver.TearDown(buffer))
 }
 
 func (r *ClusterSuite) TestClusterCommand() {
