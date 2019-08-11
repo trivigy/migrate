@@ -29,5 +29,5 @@ func (s Releases) Less(i, j int) bool {
 		panic(err)
 	}
 
-	return s[i].Name < s[j].Name && iVersion.LT(jVersion)
+	return s[i].Name < s[j].Name || (s[i].Name == s[j].Name && iVersion.LT(jVersion))
 }
