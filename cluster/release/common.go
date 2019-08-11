@@ -26,13 +26,14 @@ func (r common) GetKubeCtl(cfg *config.Cluster) (*kubernetes.Clientset, error) {
 		return nil, err
 	}
 
-	if cfg.Namespace == "" {
-		cfg.Namespace = "default"
+	namespace := "default"
+	if cfg.Namespace != "" {
+		namespace = cfg.Namespace
 	}
 
 	_, err = kubectl.CoreV1().
 		Namespaces().
-		Get(cfg.Namespace, v1meta.GetOptions{})
+		Get(namespace, v1meta.GetOptions{})
 	if v1err.IsNotFound(err) {
 		_, err := kubectl.CoreV1().
 			Namespaces().
@@ -42,7 +43,7 @@ func (r common) GetKubeCtl(cfg *config.Cluster) (*kubernetes.Clientset, error) {
 					Kind:       "Namespace",
 				},
 				ObjectMeta: v1meta.ObjectMeta{
-					Name: cfg.Namespace,
+					Name: namespace,
 				},
 			})
 		if err != nil {
@@ -83,4 +84,16 @@ func (r common) ChunkString(s string, chunkSize int) []string {
 		chunks = append(chunks, string(runes[i:nn]))
 	}
 	return chunks
+}
+
+func (r common) Namespace(cfg config.Cluster, namespace string) string {
+	if namespace != "" {
+		return namespace
+	}
+
+	if cfg.Namespace != "" {
+		return cfg.Namespace
+	}
+
+	return "default"
 }

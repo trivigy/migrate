@@ -35,3 +35,6 @@ issues:
     - linters:
         - gosec
       text: "G304:"
+    - linters:
+        - gosec
+      text: "G107:"

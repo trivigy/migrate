@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 	v1apps "k8s.io/api/apps/v1"
 	v1core "k8s.io/api/core/v1"
+	v1beta1policy "k8s.io/api/policy/v1beta1"
+	v1rbac "k8s.io/api/rbac/v1"
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -111,13 +113,49 @@ func (r *Install) Run(out io.Writer, opts InstallOptions) error {
 	for _, rel := range *cfg.Releases {
 		for _, manifest := range rel.Manifests {
 			switch manifest := manifest.(type) {
-			case *v1core.ConfigMap:
+			case *v1core.Namespace:
 				_, err := kubectl.CoreV1().
-					ConfigMaps(cfg.Namespace).
+					Namespaces().
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						ConfigMaps(cfg.Namespace).
+						Namespaces().
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
+			case *v1core.Pod:
+				_, err := kubectl.CoreV1().
+					Pods(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.CoreV1().
+						Pods(r.Namespace(cfg, manifest.Namespace)).
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
+			case *v1core.ServiceAccount:
+				_, err := kubectl.CoreV1().
+					ServiceAccounts(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.CoreV1().
+						ServiceAccounts(r.Namespace(cfg, manifest.Namespace)).
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
+			case *v1core.ConfigMap:
+				_, err := kubectl.CoreV1().
+					ConfigMaps(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.CoreV1().
+						ConfigMaps(r.Namespace(cfg, manifest.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -125,11 +163,11 @@ func (r *Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1core.Endpoints:
 				_, err := kubectl.CoreV1().
-					ConfigMaps(cfg.Namespace).
+					ConfigMaps(r.Namespace(cfg, manifest.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						Endpoints(cfg.Namespace).
+						Endpoints(r.Namespace(cfg, manifest.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -137,11 +175,83 @@ func (r *Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1core.Service:
 				_, err := kubectl.CoreV1().
-					Services(cfg.Namespace).
+					Services(r.Namespace(cfg, manifest.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						Services(cfg.Namespace).
+						Services(r.Namespace(cfg, manifest.Namespace)).
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
+			case *v1rbac.Role:
+				_, err := kubectl.RbacV1().
+					Roles(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.RbacV1().
+						Roles(r.Namespace(cfg, manifest.Namespace)).
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
+			case *v1rbac.RoleBinding:
+				_, err := kubectl.RbacV1().
+					RoleBindings(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.RbacV1().
+						RoleBindings(r.Namespace(cfg, manifest.Namespace)).
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
+			case *v1rbac.ClusterRole:
+				_, err := kubectl.RbacV1().
+					ClusterRoles().
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.RbacV1().
+						ClusterRoles().
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
+			case *v1rbac.ClusterRoleBinding:
+				_, err := kubectl.RbacV1().
+					ClusterRoleBindings().
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.RbacV1().
+						ClusterRoleBindings().
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
+			case *v1beta1policy.PodSecurityPolicy:
+				_, err := kubectl.PolicyV1beta1().
+					PodSecurityPolicies().
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.PolicyV1beta1().
+						PodSecurityPolicies().
+						Create(manifest)
+					if err != nil {
+						return err
+					}
+				}
+			case *v1apps.DaemonSet:
+				_, err := kubectl.AppsV1().
+					DaemonSets(r.Namespace(cfg, manifest.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.AppsV1().
+						DaemonSets(r.Namespace(cfg, manifest.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -149,11 +259,11 @@ func (r *Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1apps.Deployment:
 				_, err := kubectl.AppsV1().
-					Deployments(cfg.Namespace).
+					Deployments(r.Namespace(cfg, manifest.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.AppsV1().
-						Deployments(cfg.Namespace).
+						Deployments(r.Namespace(cfg, manifest.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
