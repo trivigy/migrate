@@ -19,6 +19,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.3.0
+	github.com/tidwall/gjson v1.3.2
 	github.com/trivigy/migrate v1.0.4
 	google.golang.org/genproto v0.0.0-20190404172233-64821d5d2107
 	google.golang.org/grpc v1.21.0
