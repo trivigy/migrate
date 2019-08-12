@@ -138,9 +138,9 @@ func (r *ReleaseSuite) TestReleaseCommand() {
 				"  release [command]\n" +
 				"\n" +
 				"Available Commands:\n" +
+				"  describe    Prints release resources detail information.\n" +
 				"  generate    Adds a new release template.\n" +
 				"  history     Prints revisions history of deployed releases.\n" +
-				"  inspect     Prints release resources detail information.\n" +
 				"  install     Deploys release resources on running cluster.\n" +
 				"  list        List registered releases with states information.\n" +
 				"  uninstall   Stops a running release and removes the resources.\n" +
@@ -164,7 +164,6 @@ func (r *ReleaseSuite) TestReleaseCommand() {
 			}
 
 			if testCase.output != testCase.buffer.String() {
-				fmt.Printf("%q\n", testCase.buffer.String())
 				panic(testCase.buffer.String())
 			}
 		}
