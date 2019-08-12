@@ -19,6 +19,7 @@ import (
 // project.
 type Kind struct {
 	Name   string
+	Images []string
 	Config map[string]interface{}
 }
 
@@ -53,6 +54,15 @@ func (r Kind) Setup(out io.Writer) error {
 
 	if err := r.Execute(out, args); err != nil {
 		return err
+	}
+
+	for _, image := range r.Images {
+		if err := r.Execute(out, []string{
+			"load", "docker-image", image,
+			"--name", r.Name,
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
