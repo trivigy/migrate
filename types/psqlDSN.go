@@ -35,8 +35,6 @@ func (c PsqlDSN) Driver() string {
 func (c PsqlDSN) Source() string {
 	u := url.URL{Scheme: "postgres"}
 
-	// u := make([]string, 0)
-
 	var host string
 	if c.Host != "" {
 		host = escaper.Replace(c.Host)

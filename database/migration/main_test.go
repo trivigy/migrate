@@ -59,7 +59,7 @@ func (r *MigrationSuite) SetupSuite() {
 		"default": {
 			Migrations: migrations,
 			Driver: docker.Postgres{
-				RefName: strings.ToLower(randomdata.SillyName()),
+				Name:    strings.ToLower(randomdata.SillyName()),
 				Version: "9.6",
 				DBName:  "unittest",
 				User:    "postgres",
