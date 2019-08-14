@@ -22,7 +22,7 @@ import (
 
 // Postgres represents a driver for a docker based postgres database.
 type Postgres struct {
-	RefName      string
+	Name         string
 	Version      string
 	Password     string
 	User         string
@@ -45,7 +45,7 @@ func (r Postgres) Setup(out io.Writer) error {
 
 	ctx := context.Background()
 	filter := filters.NewArgs()
-	filter.Add("name", r.RefName)
+	filter.Add("name", r.Name)
 	listOpts := types.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
@@ -93,7 +93,7 @@ func (r Postgres) Setup(out io.Writer) error {
 		AutoRemove: true,
 	}
 	networkCfg := &network.NetworkingConfig{}
-	resp, err := docker.ContainerCreate(ctx, createCfg, hostCfg, networkCfg, r.RefName)
+	resp, err := docker.ContainerCreate(ctx, createCfg, hostCfg, networkCfg, r.Name)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (r Postgres) TearDown(out io.Writer) error {
 
 	ctx := context.Background()
 	filter := filters.NewArgs()
-	filter.Add("name", r.RefName)
+	filter.Add("name", r.Name)
 	listOpts := types.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
@@ -192,7 +192,7 @@ func (r Postgres) Source() (string, error) {
 
 	ctx := context.Background()
 	filter := filters.NewArgs()
-	filter.Add("name", r.RefName)
+	filter.Add("name", r.Name)
 	listOpts := types.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
@@ -200,7 +200,7 @@ func (r Postgres) Source() (string, error) {
 	}
 
 	if len(containers) == 0 {
-		return "", fmt.Errorf("container %q not found", r.RefName)
+		return "", fmt.Errorf("container %q not found", r.Name)
 	}
 
 	ctx = context.Background()
