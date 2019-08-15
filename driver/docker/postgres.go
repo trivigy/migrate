@@ -17,7 +17,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/trivigy/migrate/v2/internal/retry"
-	types2 "github.com/trivigy/migrate/v2/types"
+	mg8types "github.com/trivigy/migrate/v2/types"
 )
 
 // Postgres represents a driver for a docker based postgres database.
@@ -111,14 +111,25 @@ func (r Postgres) Setup(out io.Writer) error {
 	}
 
 	address := info.NetworkSettings.IPAddress
-	url := types2.PsqlDSN{Host: address, User: "postgres"}
+	url := mg8types.PsqlDSN{Host: address}
+	if r.User != "" {
+		url.User = r.User
+	}
+	if r.Password != "" {
+		url.Password = r.Password
+	}
+	if r.DBName != "" {
+		url.DBName = r.DBName
+	}
 	db, err := sql.Open(url.Driver(), url.Source())
 	if err != nil {
 		return err
 	}
 
-	ctx = context.Background()
-	if err := retry.Do(ctx, 2*time.Second, func() (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := retry.Do(ctx, 1*time.Second, func() (bool, error) {
 		err := db.Ping()
 		if err == nil {
 			return false, nil
@@ -210,7 +221,7 @@ func (r Postgres) Source() (string, error) {
 	}
 
 	address := info.NetworkSettings.IPAddress
-	url := types2.PsqlDSN{Host: address}
+	url := mg8types.PsqlDSN{Host: address}
 	if r.Password != "" {
 		url.Password = r.Password
 	}
