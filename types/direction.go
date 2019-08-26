@@ -3,8 +3,6 @@ package types
 import (
 	"bytes"
 
-	"github.com/pkg/errors"
-
 	"github.com/trivigy/migrate/v2/nub"
 )
 
@@ -38,10 +36,10 @@ var toStringDirection = map[Direction]string{
 func (r Direction) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
 	if _, err := buffer.WriteString(toStringDirection[r]); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	if _, err := buffer.WriteString(`"`); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return buffer.Bytes(), nil
 }
