@@ -32,8 +32,8 @@ type Postgres struct {
 	PGData       string
 }
 
-// Setup executes the resource creation process.
-func (r Postgres) Setup(out io.Writer) error {
+// Create executes the resource creation process.
+func (r Postgres) Create(out io.Writer) error {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithVersion("1.38"),
@@ -145,8 +145,8 @@ func (r Postgres) Setup(out io.Writer) error {
 	return nil
 }
 
-// TearDown executes the resource destruction process.
-func (r Postgres) TearDown(out io.Writer) error {
+// Destroy executes the resource destruction process.
+func (r Postgres) Destroy(out io.Writer) error {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithVersion("1.38"),

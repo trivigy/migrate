@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pkg/errors"
 	"gopkg.in/gorp.v1"
 
 	"github.com/trivigy/migrate/v2/internal/store/model"
@@ -32,7 +31,7 @@ func (r Migrations) GetDBMap() *gorp.DbMap {
 func (r Migrations) CreateTableIfNotExists() error {
 	dbMap := r.GetDBMap()
 	if err := dbMap.CreateTablesIfNotExists(); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
@@ -41,7 +40,7 @@ func (r Migrations) CreateTableIfNotExists() error {
 func (r Migrations) DropTablesIfExists() error {
 	dbMap := r.GetDBMap()
 	if err := dbMap.DropTablesIfExists(); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
@@ -50,7 +49,7 @@ func (r Migrations) DropTablesIfExists() error {
 func (r Migrations) Insert(migrations ...interface{}) error {
 	dbMap := r.GetDBMap()
 	if err := dbMap.Insert(migrations...); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
@@ -59,7 +58,7 @@ func (r Migrations) Insert(migrations ...interface{}) error {
 func (r Migrations) Delete(migrations ...interface{}) error {
 	dbMap := r.GetDBMap()
 	if _, err := dbMap.Delete(migrations...); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
@@ -73,7 +72,7 @@ func (r Migrations) GetMigrations() ([]model.Migration, error) {
 		dbMap.Dialect.QuotedTableForQuery("", migrationsTableName),
 	)
 	if _, err := dbMap.Select(&migrations, query); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return migrations, nil
 }

@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/pkg/errors"
 	"gopkg.in/gorp.v1"
 
 	// mssql driver
@@ -43,11 +42,11 @@ type Context struct {
 func Open(driver, source string) (*Context, error) {
 	db, err := sql.Open(driver, source)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	if err = db.Ping(); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	dialect := supportedDialects[getDriverName(db.Driver())]
@@ -58,7 +57,7 @@ func Open(driver, source string) (*Context, error) {
 	if _, ok := dialect.(gorp.MySQLDialect); ok {
 		var out *time.Time
 		if err := db.QueryRow("SELECT NOW()").Scan(&out); err != nil {
-			return nil, errors.WithStack(err)
+			return nil, err
 		}
 	}
 

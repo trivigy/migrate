@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pkg/errors"
 	"gopkg.in/gorp.v1"
 
 	"github.com/trivigy/migrate/v2/internal/store/model"
@@ -31,7 +30,7 @@ func (r Releases) GetDBMap() *gorp.DbMap {
 func (r Releases) CreateTableIfNotExists() error {
 	dbMap := r.GetDBMap()
 	if err := dbMap.CreateTablesIfNotExists(); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
@@ -40,7 +39,7 @@ func (r Releases) CreateTableIfNotExists() error {
 func (r Releases) DropTablesIfExists() error {
 	dbMap := r.GetDBMap()
 	if err := dbMap.DropTablesIfExists(); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
@@ -49,7 +48,7 @@ func (r Releases) DropTablesIfExists() error {
 func (r Releases) Insert(releases ...interface{}) error {
 	dbMap := r.GetDBMap()
 	if err := dbMap.Insert(releases...); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
@@ -58,7 +57,7 @@ func (r Releases) Insert(releases ...interface{}) error {
 func (r Releases) Delete(releases ...interface{}) error {
 	dbMap := r.GetDBMap()
 	if _, err := dbMap.Delete(releases...); err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
@@ -72,7 +71,7 @@ func (r Releases) GetReleases() ([]model.Release, error) {
 		dbMap.Dialect.QuotedTableForQuery("", migrationsTableName),
 	)
 	if _, err := dbMap.Select(&releases, query); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return releases, nil
 }
