@@ -6,7 +6,6 @@ import (
 	"io"
 
 	container "cloud.google.com/go/container/apiv1"
-	"github.com/pkg/errors"
 	containerpb "google.golang.org/genproto/googleapis/container/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -25,8 +24,8 @@ type Kubernetes struct {
 	NodeCount   int    `json:"nodeCount" yaml:"nodeCount"`
 }
 
-// Setup executes the resource creation process.
-func (r Kubernetes) Setup(out io.Writer) error {
+// Create executes the resource creation process.
+func (r Kubernetes) Create(out io.Writer) error {
 	if err := r.EnsureCluster(out); err != nil {
 		return err
 	}
@@ -87,8 +86,8 @@ func (r Kubernetes) EnsureCluster(out io.Writer) error {
 	return nil
 }
 
-// TearDown executes the resource destruction process.
-func (r Kubernetes) TearDown(out io.Writer) error {
+// Destroy executes the resource destruction process.
+func (r Kubernetes) Destroy(out io.Writer) error {
 	if err := r.DestroyCluster(out); err != nil {
 		return err
 	}
@@ -151,12 +150,12 @@ func (r Kubernetes) KubeConfig() (*rest.Config, error) {
 	}
 	resp, err := gcloud.GetCluster(context.Background(), req)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	decCAData, err := base64.StdEncoding.DecodeString(resp.MasterAuth.ClusterCaCertificate)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	kubeConfig := &rest.Config{

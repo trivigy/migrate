@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"gopkg.in/gorp.v1"
 
 	"github.com/trivigy/migrate/v2/internal/store/model"
@@ -35,7 +34,7 @@ func (r Unittests) GetUnittests() ([]model.Unittest, error) {
 		dbMap.Dialect.QuotedTableForQuery("", unittestsTableName),
 	)
 	if _, err := dbMap.Select(&unittests, query); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	return unittests, nil
 }
