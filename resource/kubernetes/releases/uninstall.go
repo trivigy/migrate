@@ -8,7 +8,8 @@ import (
 	"github.com/spf13/cobra"
 	v1apps "k8s.io/api/apps/v1"
 	v1core "k8s.io/api/core/v1"
-	v1beta1policy "k8s.io/api/policy/v1beta1"
+	v1ext "k8s.io/api/extensions/v1beta1"
+	v1policy "k8s.io/api/policy/v1beta1"
 	v1rbac "k8s.io/api/rbac/v1"
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -271,7 +272,7 @@ func (r Uninstall) Run(out io.Writer, opts UninstallOptions) error {
 				if err != nil {
 					return err
 				}
-			case *v1beta1policy.PodSecurityPolicy:
+			case *v1policy.PodSecurityPolicy:
 				_, err := kubectl.PolicyV1beta1().
 					PodSecurityPolicies().
 					Get(manifest.Name, v1meta.GetOptions{})
@@ -315,6 +316,22 @@ func (r Uninstall) Run(out io.Writer, opts UninstallOptions) error {
 
 				err = kubectl.AppsV1().
 					Deployments(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1ext.Ingress:
+				_, err := kubectl.ExtensionsV1beta1().
+					Ingresses(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				err = kubectl.ExtensionsV1beta1().
+					Ingresses(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Delete(manifest.Name, &v1meta.DeleteOptions{})
 				if err != nil {
 					return err

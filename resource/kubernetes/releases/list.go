@@ -12,7 +12,8 @@ import (
 	"github.com/spf13/cobra"
 	v1apps "k8s.io/api/apps/v1"
 	v1core "k8s.io/api/core/v1"
-	v1beta1policy "k8s.io/api/policy/v1beta1"
+	v1ext "k8s.io/api/extensions/v1beta1"
+	v1policy "k8s.io/api/policy/v1beta1"
 	v1rbac "k8s.io/api/rbac/v1"
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -419,7 +420,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 				})
 				tbl.Render()
 				status = buf.String()
-			case *v1beta1policy.PodSecurityPolicy:
+			case *v1policy.PodSecurityPolicy:
 				kind = manifest.Kind
 				result, err := kubectl.PolicyV1beta1().
 					PodSecurityPolicies().
@@ -505,6 +506,46 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					fmt.Sprintf("%d", result.Status.AvailableReplicas),
 					fmt.Sprintf("%.2fm", diffTime.Minutes()),
 				})
+				tbl.Render()
+				status = buf.String()
+			case *v1ext.Ingress:
+				kind = manifest.Kind
+				result, err := kubectl.ExtensionsV1beta1().
+					Ingresses(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					status = string(v1meta.StatusReasonNotFound)
+					break
+				} else if err != nil {
+					return err
+				}
+
+				tbl, buf := r.NewEmbeddedTable()
+				tbl.SetHeader([]string{"NAMESPACE", "NAME", "HOST", "PATH", "PORT", "AGE"})
+				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
+
+				namespace := result.ObjectMeta.Namespace
+				name := result.ObjectMeta.Name
+				age := fmt.Sprintf("%.2fm", diffTime.Minutes())
+				for i := range result.Spec.Rules {
+					if i != 0 {
+						namespace = ""
+						name = ""
+						age = ""
+					}
+					host := result.Spec.Rules[i].Host
+					for j := range result.Spec.Rules[i].HTTP.Paths {
+						if j != 0 {
+							host = ""
+						}
+						path := result.Spec.Rules[i].HTTP.Paths[j].Path
+						if path == "" {
+							path = "/"
+						}
+						port := result.Spec.Rules[i].HTTP.Paths[j].Backend.ServicePort.String()
+						tbl.Append([]string{namespace, name, host, path, port, age})
+					}
+				}
 				tbl.Render()
 				status = buf.String()
 			default:

@@ -10,7 +10,8 @@ import (
 	"github.com/spf13/cobra"
 	v1apps "k8s.io/api/apps/v1"
 	v1core "k8s.io/api/core/v1"
-	v1beta1policy "k8s.io/api/policy/v1beta1"
+	v1ext "k8s.io/api/extensions/v1beta1"
+	v1policy "k8s.io/api/policy/v1beta1"
 	v1rbac "k8s.io/api/rbac/v1"
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -296,7 +297,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
-			case *v1beta1policy.PodSecurityPolicy:
+			case *v1policy.PodSecurityPolicy:
 				result, err := kubectl.PolicyV1beta1().
 					PodSecurityPolicies().
 					Get(manifest.Name, v1meta.GetOptions{})
@@ -331,6 +332,22 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 			case *v1apps.Deployment:
 				result, err := kubectl.AppsV1().
 					Deployments(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Get(manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					break
+				} else if err != nil {
+					return err
+				}
+
+				output, err := r.FilterResult(result, opts.Filter)
+				if err != nil {
+					return err
+				}
+				fmt.Fprintf(out, "%s", output)
+			case *v1ext.Ingress:
+				result, err := kubectl.ExtensionsV1beta1().
+					Ingresses(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
