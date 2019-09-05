@@ -125,11 +125,13 @@ func (r CloudDNS) DestroyRecordSets(out io.Writer) error {
 			}
 		}
 
-		_, err = service.Changes.Create(r.ProjectID, r.Name, &v1dns.Change{
-			Deletions: deletions,
-		}).Do()
-		if err != nil {
-			return err
+		if len(deletions) != 0 {
+			_, err = service.Changes.Create(r.ProjectID, r.Name, &v1dns.Change{
+				Deletions: deletions,
+			}).Do()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
