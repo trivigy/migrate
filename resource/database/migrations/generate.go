@@ -26,7 +26,7 @@ import (
 )
 
 func init() {
-	migrate.Registry.Store(types.Migration{
+	migrate.Registry.Store(&types.Migration{
 		Name: "{{ .Name }}",
 		Tag:  semver.MustParse("{{ .Tag }}"),
 		Up: []types.Operation{},
