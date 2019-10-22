@@ -1,3 +1,4 @@
+// Package provider implements special driver providers for migrate package.
 package provider
 
 import (
@@ -48,7 +49,6 @@ func (r SQL) TearDown(out io.Writer) error {
 // Name returns the driver name.
 func (r SQL) Name() string {
 	return r.Dialect
-
 }
 
 // Source returns the data source name for the driver.

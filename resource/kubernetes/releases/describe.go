@@ -17,7 +17,7 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/trivigy/migrate/v2/nub"
+	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
 	"github.com/trivigy/migrate/v2/types"
 )
@@ -84,7 +84,7 @@ func (r Describe) NewCommand(name string) *cobra.Command {
 	pflags := cmd.PersistentFlags()
 	pflags.Bool("help", false, "Show help information.")
 	pflags.StringP(
-		"env", "e", nub.DefaultEnvironment,
+		"env", "e", global.DefaultEnvironment,
 		"Run with env `ENV` configurations.",
 	)
 
@@ -142,7 +142,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					Namespaces().
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -158,7 +158,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					Pods(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -174,7 +174,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					ServiceAccounts(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -190,7 +190,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					ConfigMaps(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -206,7 +206,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					Endpoints(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -222,7 +222,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					Services(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -238,7 +238,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					Roles(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -254,7 +254,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					RoleBindings(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -270,7 +270,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					ClusterRoles().
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -286,7 +286,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					ClusterRoleBindings().
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -302,7 +302,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					PodSecurityPolicies().
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -318,7 +318,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					DaemonSets(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -334,7 +334,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					Deployments(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err
@@ -350,7 +350,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					Ingresses(r.FallBackNS(manifest.Namespace, r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
-					fmt.Fprintf(out, string(v1meta.StatusReasonNotFound))
+					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
 					break
 				} else if err != nil {
 					return err

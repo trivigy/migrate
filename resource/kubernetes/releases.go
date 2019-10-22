@@ -1,3 +1,4 @@
+// Package kubernetes implements kubernetes related set of commands.
 package kubernetes
 
 import (

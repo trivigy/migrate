@@ -1,3 +1,4 @@
+// Package resource implements pluggable cobra subcommands.
 package resource
 
 import (

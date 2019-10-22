@@ -1,3 +1,4 @@
+// Package migrate implements an abstract migration tool.
 package migrate
 
 import (

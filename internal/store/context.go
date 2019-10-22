@@ -1,3 +1,4 @@
+// Package store implements operations associated with update migration records.
 package store
 
 import (

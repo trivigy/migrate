@@ -1,3 +1,4 @@
+// Package require implements cobra arguments verification helpers.
 package require
 
 import (

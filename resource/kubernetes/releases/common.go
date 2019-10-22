@@ -1,3 +1,4 @@
+// Package releases implements the releases subcommand structure.
 package releases
 
 import (

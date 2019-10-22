@@ -1,3 +1,4 @@
+// Package database implements the database subcommand structure.
 package database
 
 import (

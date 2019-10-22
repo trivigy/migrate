@@ -1,4 +1,5 @@
-package nub
+// Package global implements global definitions for migrate package.
+package global
 
 const (
 	// Unknown defines a value used for enum equivalency checks.

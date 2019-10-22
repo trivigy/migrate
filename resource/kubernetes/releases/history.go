@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/trivigy/migrate/v2/nub"
+	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
 	"github.com/trivigy/migrate/v2/types"
 )
@@ -47,7 +47,7 @@ func (r History) NewCommand(name string) *cobra.Command {
 	pflags := cmd.PersistentFlags()
 	pflags.Bool("help", false, "Show help information.")
 	pflags.StringP(
-		"env", "e", nub.DefaultEnvironment,
+		"env", "e", global.DefaultEnvironment,
 		"Run with env `ENV` configurations.",
 	)
 

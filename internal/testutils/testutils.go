@@ -1,3 +1,4 @@
+// Package testutils implements helper functions for running unittests.
 package testutils
 
 import (
