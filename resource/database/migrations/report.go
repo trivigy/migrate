@@ -127,7 +127,6 @@ func (r Report) Run(out io.Writer, opts UpOptions) error {
 		} else if rgMig == nil && dbMig != nil {
 			return fmt.Errorf("migration tags missing %q", dbMig.Tag)
 		}
-
 	}
 
 	if len(*r.Migrations) > 0 {

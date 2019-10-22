@@ -1,3 +1,4 @@
+// Package primitive implements basic set of commands.
 package primitive
 
 import (

@@ -18,7 +18,7 @@ import (
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/trivigy/migrate/v2/nub"
+	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
 	"github.com/trivigy/migrate/v2/types"
 )
@@ -60,7 +60,7 @@ func (r List) NewCommand(name string) *cobra.Command {
 	pflags := cmd.PersistentFlags()
 	pflags.Bool("help", false, "Show help information.")
 	pflags.StringP(
-		"env", "e", nub.DefaultEnvironment,
+		"env", "e", global.DefaultEnvironment,
 		"Run with env `ENV` configurations.",
 	)
 

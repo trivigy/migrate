@@ -1,3 +1,4 @@
+// Package docker implements migrate drivers that operate on top of docker.
 package docker
 
 import (

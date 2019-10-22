@@ -1,22 +1,19 @@
 module github.com/trivigy/migrate/v2
 
-go 1.12
+go 1.13
 
 require (
 	cloud.google.com/go v0.44.3
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/denisenkom/go-mssqldb v0.0.0-20190806190131-db2462fef53b
-	github.com/docker/docker v1.14.0-0.20190131205458-8a43b7bb99cd
+	github.com/docker/docker v1.4.2-0.20191022130247-a30990b3c8d0
 	github.com/docker/go-connections v0.4.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/lib/pq v1.2.0
 	github.com/mattn/go-sqlite3 v1.11.0
 	github.com/olekukonko/tablewriter v0.0.1
-	github.com/onsi/ginkgo v1.7.0 // indirect
-	github.com/onsi/gomega v1.4.3 // indirect
-	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.3.0

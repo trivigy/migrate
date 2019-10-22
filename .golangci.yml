@@ -20,6 +20,10 @@ linters:
     - errcheck
     - dupl
     - gocyclo
+    - gocognit
+    - funlen
+    - dogsled
+    - wsl
 
 issues:
   exclude-use-default: false

@@ -1,3 +1,4 @@
+// Package types implements migrate related interfaces and models.
 package types
 
 import (

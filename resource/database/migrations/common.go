@@ -1,3 +1,4 @@
+// Package migrations implements the migrations subcommand structure.
 package migrations
 
 import (
@@ -50,7 +51,6 @@ func (r common) GenerateMigrationPlan(
 					rgMig.Tag.String(), dbMig.Tag,
 				)
 			}
-
 		} else if rgMig != nil && dbMig == nil {
 			if direction == types.DirectionUp {
 				break

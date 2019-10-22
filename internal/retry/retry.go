@@ -1,3 +1,4 @@
+// Package retry implements a goroutine based retry ticker.
 package retry
 
 import (

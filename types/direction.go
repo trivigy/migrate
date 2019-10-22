@@ -3,7 +3,7 @@ package types
 import (
 	"bytes"
 
-	"github.com/trivigy/migrate/v2/nub"
+	"github.com/trivigy/migrate/v2/global"
 )
 
 // Direction defines the type of the migration direction.
@@ -27,7 +27,7 @@ func (r Direction) String() string {
 }
 
 var toStringDirection = map[Direction]string{
-	Direction(0):  nub.UnknownStr,
+	Direction(0):  global.UnknownStr,
 	DirectionUp:   directionUpStr,
 	DirectionDown: directionDownStr,
 }

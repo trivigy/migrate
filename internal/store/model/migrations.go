@@ -1,3 +1,4 @@
+// Package model implements database access objects for the store operations.
 package model
 
 import (
