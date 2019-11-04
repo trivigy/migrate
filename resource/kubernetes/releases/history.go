@@ -44,15 +44,9 @@ func (r History) NewCommand(name string) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	pflags := cmd.PersistentFlags()
-	pflags.Bool("help", false, "Show help information.")
-	pflags.StringP(
-		"env", "e", global.DefaultEnvironment,
-		"Run with env `ENV` configurations.",
-	)
-
 	flags := cmd.Flags()
 	flags.SortFlags = false
+	flags.Bool("help", false, "Show help information.")
 	return cmd
 }
 

@@ -45,8 +45,9 @@ func (r Migrations) NewCommand(name string) *cobra.Command {
 		}.NewCommand("report"),
 	)
 
-	pflags := cmd.Flags()
-	pflags.Bool("help", false, "Show help information.")
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.Bool("help", false, "Show help information.")
 	return cmd
 }
 
