@@ -36,8 +36,9 @@ func (r DNS) NewCommand(name string) *cobra.Command {
 		}.NewCommand("destroy"),
 	)
 
-	pflags := cmd.Flags()
-	pflags.Bool("help", false, "Show help information.")
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.Bool("help", false, "Show help information.")
 	return cmd
 }
 

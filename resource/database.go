@@ -46,8 +46,9 @@ func (r Database) NewCommand(name string) *cobra.Command {
 		}.NewCommand("source"),
 	)
 
-	pflags := cmd.Flags()
-	pflags.Bool("help", false, "Show help information.")
+	flags := cmd.Flags()
+	flags.SortFlags = false
+	flags.Bool("help", false, "Show help information.")
 	return cmd
 }
 
