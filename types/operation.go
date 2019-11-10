@@ -11,8 +11,8 @@ import (
 
 // Operation defines a single query operation to run on the database.
 type Operation struct {
-	Query     string `json:"query" yaml:"query"`
-	DisableTx bool   `json:"disableTx" yaml:"disableTx"`
+	Query     string `json:"query,omitempty" yaml:"query,omitempty"`
+	DisableTx bool   `json:"disableTx,omitempty" yaml:"disableTx,omitempty"`
 }
 
 // Execute runs the query operation on the database.

@@ -13,6 +13,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/spf13/cobra"
 
+	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
 	"github.com/trivigy/migrate/v2/types"
 )
@@ -44,12 +45,17 @@ type Generate struct {
 	*types.Releases
 }
 
-// GenerateOptions is used for executing the Run() method.
+// GenerateOptions is used for executing the run() method.
 type GenerateOptions struct {
 	Dir  string `json:"dir" yaml:"dir"`
 	Name string `json:"name" yaml:"name"`
 	Tag  string `json:"tag" yaml:"tag"`
 }
+
+var _ interface {
+	types.Resource
+	types.Command
+} = new(Generate)
 
 // NewCommand returns a new cobra.Command generate command object.
 func (r Generate) NewCommand(name string) *cobra.Command {
@@ -69,10 +75,14 @@ func (r Generate) NewCommand(name string) *cobra.Command {
 			name, tag := parts[0], parts[1]
 
 			opts := GenerateOptions{Dir: dir, Name: name, Tag: tag}
-			return r.Run(cmd.OutOrStdout(), opts)
+			return r.run(cmd.OutOrStdout(), opts)
 		},
-		SilenceUsage: true,
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
+
+	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
+	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -96,7 +106,7 @@ func (r Generate) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r Generate) validation(args []string) error {
+func (r Generate) validation(cmd *cobra.Command, args []string) error {
 	if err := require.ExactArgs(args, 1); err != nil {
 		return err
 	}
@@ -117,8 +127,8 @@ func (r Generate) validation(args []string) error {
 	return nil
 }
 
-// Run is a starting point method for executing the generate command.
-func (r Generate) Run(out io.Writer, opts GenerateOptions) error {
+// run is a starting point method for executing the generate command.
+func (r Generate) run(out io.Writer, opts GenerateOptions) error {
 	base, err := filepath.Abs(opts.Dir)
 	if err != nil {
 		return err
@@ -142,7 +152,7 @@ func (r Generate) Run(out io.Writer, opts GenerateOptions) error {
 
 	for _, v := range tags {
 		if opts.Tag == v.String() {
-			return fmt.Errorf("migration tag %q exists", opts.Tag)
+			return fmt.Errorf("release tag %q exists", opts.Tag)
 		}
 	}
 
@@ -154,11 +164,11 @@ func (r Generate) Run(out io.Writer, opts GenerateOptions) error {
 	}
 	defer file.Close()
 
-	tpl := template.Must(template.New("migration").Parse(templateContent))
+	tpl := template.Must(template.New("releases").Parse(templateContent))
 	if err := tpl.Execute(file, opts); err != nil {
 		return err
 	}
 
-	fmt.Fprintf(out, "Created migration %q\n", fullpath)
+	fmt.Fprintf(out, "Created release %q\n", fullpath)
 	return nil
 }

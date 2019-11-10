@@ -24,6 +24,7 @@ linters:
     - funlen
     - dogsled
     - wsl
+    - unparam
 
 issues:
   exclude-use-default: false
@@ -32,7 +33,9 @@ issues:
         - staticcheck
         - gosec
       text: "SA1012:"
-
+    - linters:
+        - staticcheck
+      text: "SA4009:"
     - linters:
         - gosec
       text: "G201:"

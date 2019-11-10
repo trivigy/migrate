@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/trivigy/migrate/v2/types"
@@ -27,22 +28,22 @@ func (r *ReleasesSuite) TestInstallCommand() {
 		},
 	}
 
-	for i, testCase := range testCases {
-		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
+	for i, tc := range testCases {
+		failMsg := fmt.Sprintf("test: %d %v", i, spew.Sprint(tc))
 		runner := func() {
-			err := testCase.cmd.Execute("install", testCase.buffer, testCase.args)
+			err := tc.cmd.Execute("install", tc.buffer, tc.args)
 			if err != nil {
 				panic(err.Error())
 			}
 
-			if testCase.output != testCase.buffer.String() {
-				fmt.Printf("%q\n", testCase.buffer.String())
-				panic(testCase.buffer.String())
+			if tc.output != tc.buffer.String() {
+				fmt.Printf("%q\n", tc.buffer.String())
+				panic(tc.buffer.String())
 			}
 		}
 
-		if testCase.shouldFail {
-			assert.PanicsWithValue(r.T(), testCase.onFail, runner, failMsg)
+		if tc.shouldFail {
+			assert.PanicsWithValue(r.T(), tc.onFail, runner, failMsg)
 		} else {
 			assert.NotPanics(r.T(), runner, failMsg)
 		}

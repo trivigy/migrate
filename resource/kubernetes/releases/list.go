@@ -1,6 +1,7 @@
 package releases
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
@@ -25,18 +26,20 @@ import (
 
 // List represents the cluster release list command object.
 type List struct {
-	common
-	Namespace string          `json:"namespace" yaml:"namespace"`
+	Namespace *string         `json:"namespace" yaml:"namespace"`
 	Releases  *types.Releases `json:"releases" yaml:"releases"`
 	Driver    interface {
-		types.KubeConfiged
+		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
-// ListOptions is used for executing the Run() command.
-type ListOptions struct {
-	Env string `json:"env" yaml:"env"`
-}
+// ListOptions is used for executing the run() command.
+type ListOptions struct{}
+
+var _ interface {
+	types.Resource
+	types.Command
+} = new(List)
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
 func (r List) NewCommand(name string) *cobra.Command {
@@ -46,16 +49,15 @@ func (r List) NewCommand(name string) *cobra.Command {
 		Long:  "List registered releases with states information",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			env, err := cmd.Flags().GetString("env")
-			if err != nil {
-				return err
-			}
-
-			opts := ListOptions{Env: env}
-			return r.Run(cmd.OutOrStdout(), opts)
+			opts := ListOptions{}
+			return r.run(context.Background(), cmd.OutOrStdout(), opts)
 		},
-		SilenceUsage: true,
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
+
+	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
+	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -75,16 +77,16 @@ func (r List) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r List) validation(args []string) error {
+func (r List) validation(cmd *cobra.Command, args []string) error {
 	if err := require.NoArgs(args); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Run is a starting point method for executing the create command.
-func (r List) Run(out io.Writer, opts ListOptions) error {
-	kubectl, err := r.GetKubeCtl(r.Driver, r.Namespace)
+// run is a starting point method for executing the create command.
+func (r List) run(ctx context.Context, out io.Writer, opts ListOptions) error {
+	kubectl, err := GetK8sClientset(ctx, r.Driver, *r.Namespace)
 	if err != nil {
 		return err
 	}
@@ -111,7 +113,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAME", "STATUS", "AGE"})
 
 				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
@@ -125,7 +127,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1core.Pod:
 				kind = manifest.Kind
 				result, err := kubectl.CoreV1().
-					Pods(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Pods(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -134,7 +136,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "READY", "STATUS", "RESTARTS", "AGE"})
 
 				readyCount := 0
@@ -160,7 +162,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1core.ServiceAccount:
 				kind = manifest.Kind
 				result, err := kubectl.CoreV1().
-					ServiceAccounts(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					ServiceAccounts(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -169,7 +171,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "SECRETS", "AGE"})
 
 				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
@@ -184,7 +186,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1core.ConfigMap:
 				kind = manifest.Kind
 				result, err := kubectl.CoreV1().
-					ConfigMaps(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					ConfigMaps(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -193,7 +195,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "DATA", "AGE"})
 
 				var rbytes []byte
@@ -216,7 +218,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1core.Endpoints:
 				kind = manifest.Kind
 				result, err := kubectl.CoreV1().
-					Endpoints(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Endpoints(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -225,7 +227,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "ENDPOINTS", "AGE"})
 
 				endpoints := make([]string, 0)
@@ -252,7 +254,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1core.Service:
 				kind = manifest.Kind
 				result, err := kubectl.CoreV1().
-					Services(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Services(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -261,7 +263,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "TYPE", "CLUSTER-IP", "EXTERNAL-IP", "PORT(s)", "AGE"})
 
 				externalIP := "<none>"
@@ -294,7 +296,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1core.Secret:
 				kind = manifest.Kind
 				result, err := kubectl.CoreV1().
-					Secrets(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Secrets(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -303,7 +305,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "TYPE", "DATA", "AGE"})
 
 				var rbytes []byte
@@ -327,7 +329,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1rbac.Role:
 				kind = manifest.Kind
 				result, err := kubectl.RbacV1().
-					Roles(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Roles(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -336,7 +338,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "AGE"})
 
 				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
@@ -350,7 +352,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1rbac.RoleBinding:
 				kind = manifest.Kind
 				result, err := kubectl.RbacV1().
-					RoleBindings(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					RoleBindings(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -359,7 +361,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "AGE"})
 
 				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
@@ -382,7 +384,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAME", "AGE"})
 
 				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
@@ -404,7 +406,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAME", "AGE"})
 
 				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
@@ -426,7 +428,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAME", "PRIV", "CAPS", "VOLUMES"})
 
 				var caps []string
@@ -452,7 +454,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1apps.DaemonSet:
 				kind = manifest.Kind
 				result, err := kubectl.AppsV1().
-					DaemonSets(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					DaemonSets(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -461,7 +463,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "DESIRED", "CURRENT", "READY", "UP-TO-DATE", "AVAILABLE", "AGE"})
 
 				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
@@ -480,7 +482,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1apps.Deployment:
 				kind = manifest.Kind
 				result, err := kubectl.AppsV1().
-					Deployments(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Deployments(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -489,7 +491,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "READY", "UP-TO-DATE", "AVAILABLE", "AGE"})
 				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
 				tbl.Append([]string{
@@ -505,7 +507,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 			case *v1ext.Ingress:
 				kind = manifest.Kind
 				result, err := kubectl.ExtensionsV1beta1().
-					Ingresses(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Ingresses(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					status = string(v1meta.StatusReasonNotFound)
@@ -514,7 +516,7 @@ func (r List) Run(out io.Writer, opts ListOptions) error {
 					return err
 				}
 
-				tbl, buf := r.NewEmbeddedTable()
+				tbl, buf := NewEmbeddedTable()
 				tbl.SetHeader([]string{"NAMESPACE", "NAME", "HOST", "PATH", "PORT", "AGE"})
 				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
 

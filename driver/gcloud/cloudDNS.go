@@ -5,36 +5,49 @@ import (
 	"io"
 	"net/http"
 
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	v1dns "google.golang.org/api/dns/v1"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/iam/v1"
+	"google.golang.org/api/option"
 
 	"github.com/trivigy/migrate/v2/types"
 )
 
 // CloudDNS represents a driver for gcloud CloudDNS service.
 type CloudDNS struct {
-	Config
-	DNSName     string           `json:"dnsName" yaml:"dnsName"`
-	Visibility  string           `json:"visibility" yaml:"visibility"`
-	Description string           `json:"description" yaml:"description"`
+	Profile
+	DNSName     string           `json:"dnsName" yaml:"dnsName" validate:"required"`
+	Visibility  string           `json:"visibility" yaml:"visibility" validate:"required"`
+	Description string           `json:"description" yaml:"description" validate:"required"`
 	Records     types.DNSRecords `json:"records" yaml:"records"`
 }
 
+var _ interface {
+	types.Creator
+	types.Destroyer
+} = new(CloudDNS)
+
 // Create executes the resource creation process.
-func (r CloudDNS) Create(out io.Writer) error {
-	if err := r.EnsureManagedZone(out); err != nil {
+func (r CloudDNS) Create(ctx context.Context, out io.Writer) error {
+	ts, err := google.DefaultTokenSource(ctx, iam.CloudPlatformScope)
+	if err != nil {
 		return err
 	}
-	if err := r.EnsureRecordSets(out); err != nil {
+
+	if err := r.EnsureManagedZone(ctx, out, ts); err != nil {
+		return err
+	}
+	if err := r.EnsureRecordSets(ctx, out, ts); err != nil {
 		return err
 	}
 	return nil
 }
 
 // EnsureManagedZone makes sure that the managed zone is created.
-func (r CloudDNS) EnsureManagedZone(out io.Writer) error {
-	ctx := context.Background()
-	service, err := v1dns.NewService(ctx)
+func (r CloudDNS) EnsureManagedZone(ctx context.Context, out io.Writer, ts oauth2.TokenSource) error {
+	service, err := v1dns.NewService(ctx, option.WithTokenSource(ts))
 	if err != nil {
 		return err
 	}
@@ -62,9 +75,8 @@ func (r CloudDNS) EnsureManagedZone(out io.Writer) error {
 }
 
 // EnsureRecordSets makes sure that the needed record sets are created.
-func (r CloudDNS) EnsureRecordSets(out io.Writer) error {
-	ctx := context.Background()
-	service, err := v1dns.NewService(ctx)
+func (r CloudDNS) EnsureRecordSets(ctx context.Context, out io.Writer, ts oauth2.TokenSource) error {
+	service, err := v1dns.NewService(ctx, option.WithTokenSource(ts))
 	if err != nil {
 		return err
 	}
@@ -96,17 +108,21 @@ func (r CloudDNS) EnsureRecordSets(out io.Writer) error {
 }
 
 // Destroy executes the resource destruction process.
-func (r CloudDNS) Destroy(out io.Writer) error {
-	if err := r.DestroyRecordSets(out); err != nil {
+func (r CloudDNS) Destroy(ctx context.Context, out io.Writer) error {
+	ts, err := google.DefaultTokenSource(ctx, iam.CloudPlatformScope)
+	if err != nil {
+		return err
+	}
+
+	if err := r.DestroyRecordSets(ctx, out, ts); err != nil {
 		return err
 	}
 	return nil
 }
 
 // DestroyRecordSets deletes the provided records from the cloudDNS service.
-func (r CloudDNS) DestroyRecordSets(out io.Writer) error {
-	ctx := context.Background()
-	service, err := v1dns.NewService(ctx)
+func (r CloudDNS) DestroyRecordSets(ctx context.Context, out io.Writer, ts oauth2.TokenSource) error {
+	service, err := v1dns.NewService(ctx, option.WithTokenSource(ts))
 	if err != nil {
 		return err
 	}

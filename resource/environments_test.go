@@ -28,15 +28,27 @@ func (r *EnvironmentsSuite) TestEnvironmentsCommand() {
 			true,
 			"accepts 1 arg(s), received 0 for \"environments\"\n" +
 				"\n" +
-				"Usage:  environments [flags] command",
+				"Usage:\n" +
+				"  environments [flags] COMMAND\n" +
+				"\n" +
+				"Available Commands:\n" +
+				"  developmentDatabase   SQL database deployment and migrations management tool.\n" +
+				"  developmentDomainName Controls instance of domain name service resource.\n" +
+				"  developmentKubernetes Kubernetes cluster release and deployment controller.\n" +
+				"\n" +
+				"Flags:\n" +
+				"  -e, --env ENV   Run with env ENV configurations. (default \"development\")\n" +
+				"      --help      Show help information.\n",
 			Environments{
-				"default": Collection{
-					"defaultDatabase":   Database{},
-					"defaultKubernetes": Kubernetes{},
+				"development": Collection{
+					"developmentDatabase":   Database{},
+					"developmentKubernetes": Kubernetes{},
+					"developmentDomainName": DomainName{},
 				},
 				"staging": Collection{
 					"stagingDatabase":   Database{},
 					"stagingKubernetes": Kubernetes{},
+					"stagingDomainName": DomainName{},
 				},
 			},
 			bytes.NewBuffer(nil),
@@ -46,41 +58,56 @@ func (r *EnvironmentsSuite) TestEnvironmentsCommand() {
 		{
 			false, "",
 			Environments{
-				"default": Collection{
-					"defaultDatabase":   Database{},
-					"defaultKubernetes": Kubernetes{},
+				"development": Collection{
+					"developmentDatabase":   Database{},
+					"developmentKubernetes": Kubernetes{},
+					"developmentDomainName": DomainName{},
 				},
 				"staging": Collection{
 					"stagingDatabase":   Database{},
 					"stagingKubernetes": Kubernetes{},
+					"stagingDomainName": DomainName{},
 				},
 			},
 			bytes.NewBuffer(nil),
 			[]string{"--help"},
 			"Usage:\n" +
-				"  environments [flags] command\n" +
+				"  environments [flags] COMMAND\n" +
 				"\n" +
 				"Available Commands:\n" +
-				"  defaultDatabase   SQL database deployment and migrations management tool.\n" +
-				"  defaultKubernetes Kubernetes cluster release and deployment controller.\n" +
+				"  developmentDatabase   SQL database deployment and migrations management tool.\n" +
+				"  developmentDomainName Controls instance of domain name service resource.\n" +
+				"  developmentKubernetes Kubernetes cluster release and deployment controller.\n" +
 				"\n" +
 				"Flags:\n" +
-				"  -e, --env ENV   Run with env ENV configurations. (default \"default\")\n" +
+				"  -e, --env ENV   Run with env ENV configurations. (default \"development\")\n" +
 				"      --help      Show help information.\n",
 		},
 		{
 			true,
 			"accepts 1 arg(s), received 0 for \"environments\"\n" +
 				"\n" +
-				"Usage:  environments [flags] command",
+				"Usage:\n" +
+				"  environments [flags] COMMAND\n" +
+				"\n" +
+				"Available Commands:\n" +
+				"  stagingDatabase   SQL database deployment and migrations management tool.\n" +
+				"  stagingDomainName Controls instance of domain name service resource.\n" +
+				"  stagingKubernetes Kubernetes cluster release and deployment controller.\n" +
+				"\n" +
+				"Flags:\n" +
+				"  -e, --env ENV   Run with env ENV configurations. (default \"development\")\n" +
+				"      --help      Show help information.\n",
 			Environments{
-				"default": Collection{
-					"defaultDatabase":   Database{},
-					"defaultKubernetes": Kubernetes{},
+				"development": Collection{
+					"developmentDatabase":   Database{},
+					"developmentKubernetes": Kubernetes{},
+					"developmentDomainName": DomainName{},
 				},
 				"staging": Collection{
 					"stagingDatabase":   Database{},
 					"stagingKubernetes": Kubernetes{},
+					"stagingDomainName": DomainName{},
 				},
 			},
 			bytes.NewBuffer(nil),
@@ -90,132 +117,144 @@ func (r *EnvironmentsSuite) TestEnvironmentsCommand() {
 		{
 			false, "",
 			Environments{
-				"default": Collection{
-					"defaultDatabase":   Database{},
-					"defaultKubernetes": Kubernetes{},
+				"development": Collection{
+					"developmentDatabase":   Database{},
+					"developmentKubernetes": Kubernetes{},
+					"developmentDomainName": DomainName{},
 				},
 				"staging": Collection{
 					"stagingDatabase":   Database{},
 					"stagingKubernetes": Kubernetes{},
+					"stagingDomainName": DomainName{},
 				},
 			},
 			bytes.NewBuffer(nil),
 			[]string{"-e", "staging", "--help"},
 			"Usage:\n" +
-				"  environments [flags] command\n" +
+				"  environments [flags] COMMAND\n" +
 				"\n" +
 				"Available Commands:\n" +
 				"  stagingDatabase   SQL database deployment and migrations management tool.\n" +
+				"  stagingDomainName Controls instance of domain name service resource.\n" +
 				"  stagingKubernetes Kubernetes cluster release and deployment controller.\n" +
 				"\n" +
 				"Flags:\n" +
-				"  -e, --env ENV   Run with env ENV configurations. (default \"default\")\n" +
+				"  -e, --env ENV   Run with env ENV configurations. (default \"development\")\n" +
 				"      --help      Show help information.\n",
 		},
 		{
 			false, "",
 			Environments{
-				"default": Collection{
-					"defaultDatabase":   Database{},
-					"defaultKubernetes": Kubernetes{},
+				"development": Collection{
+					"developmentDatabase":   Database{},
+					"developmentKubernetes": Kubernetes{},
+					"developmentDomainName": DomainName{},
 				},
 				"staging": Collection{
 					"stagingDatabase":   Database{},
 					"stagingKubernetes": Kubernetes{},
+					"stagingDomainName": DomainName{},
 				},
 			},
 			bytes.NewBuffer(nil),
 			[]string{"--help", "-e", "staging"},
 			"Usage:\n" +
-				"  environments [flags] command\n" +
+				"  environments [flags] COMMAND\n" +
 				"\n" +
 				"Available Commands:\n" +
 				"  stagingDatabase   SQL database deployment and migrations management tool.\n" +
+				"  stagingDomainName Controls instance of domain name service resource.\n" +
 				"  stagingKubernetes Kubernetes cluster release and deployment controller.\n" +
 				"\n" +
 				"Flags:\n" +
-				"  -e, --env ENV   Run with env ENV configurations. (default \"default\")\n" +
+				"  -e, --env ENV   Run with env ENV configurations. (default \"development\")\n" +
 				"      --help      Show help information.\n",
 		},
 		{
 			false, "",
 			Environments{
-				"default": Collection{
-					"defaultDatabase":   Database{},
-					"defaultKubernetes": Kubernetes{},
+				"development": Collection{
+					"developmentDatabase":   Database{},
+					"developmentKubernetes": Kubernetes{},
+					"developmentDomainName": DomainName{},
 				},
 				"staging": Collection{
 					"stagingDatabase":   Database{},
 					"stagingKubernetes": Kubernetes{},
+					"stagingDomainName": DomainName{},
 				},
 			},
 			bytes.NewBuffer(nil),
 			[]string{"--help", "defaultDatabase"},
 			"Usage:\n" +
-				"  environments [flags] command\n" +
+				"  environments [flags] COMMAND\n" +
 				"\n" +
 				"Available Commands:\n" +
-				"  defaultDatabase   SQL database deployment and migrations management tool.\n" +
-				"  defaultKubernetes Kubernetes cluster release and deployment controller.\n" +
+				"  developmentDatabase   SQL database deployment and migrations management tool.\n" +
+				"  developmentDomainName Controls instance of domain name service resource.\n" +
+				"  developmentKubernetes Kubernetes cluster release and deployment controller.\n" +
 				"\n" +
 				"Flags:\n" +
-				"  -e, --env ENV   Run with env ENV configurations. (default \"default\")\n" +
+				"  -e, --env ENV   Run with env ENV configurations. (default \"development\")\n" +
 				"      --help      Show help information.\n",
 		},
 		{
 			false, "",
 			Environments{
-				"default": Collection{
-					"defaultDatabase":   Database{},
-					"defaultKubernetes": Kubernetes{},
+				"development": Collection{
+					"developmentDatabase":   Database{},
+					"developmentKubernetes": Kubernetes{},
+					"developmentDomainName": DomainName{},
 				},
 				"staging": Collection{
 					"stagingDatabase":   Database{},
 					"stagingKubernetes": Kubernetes{},
+					"stagingDomainName": DomainName{},
 				},
 			},
 			bytes.NewBuffer(nil),
 			[]string{"--help", "defaultDatabase", "--help"},
 			"Usage:\n" +
-				"  environments [flags] command\n" +
+				"  environments [flags] COMMAND\n" +
 				"\n" +
 				"Available Commands:\n" +
-				"  defaultDatabase   SQL database deployment and migrations management tool.\n" +
-				"  defaultKubernetes Kubernetes cluster release and deployment controller.\n" +
+				"  developmentDatabase   SQL database deployment and migrations management tool.\n" +
+				"  developmentDomainName Controls instance of domain name service resource.\n" +
+				"  developmentKubernetes Kubernetes cluster release and deployment controller.\n" +
 				"\n" +
 				"Flags:\n" +
-				"  -e, --env ENV   Run with env ENV configurations. (default \"default\")\n" +
+				"  -e, --env ENV   Run with env ENV configurations. (default \"development\")\n" +
 				"      --help      Show help information.\n",
 		},
 		{
 			false, "",
 			Environments{
-				"default": Collection{
-					"defaultDatabase":   Database{},
-					"defaultKubernetes": Kubernetes{},
+				"development": Collection{
+					"developmentDatabase":   Database{},
+					"developmentKubernetes": Kubernetes{},
+					"developmentDomainName": DomainName{},
 				},
 				"staging": Collection{
 					"stagingDatabase":   Database{},
 					"stagingKubernetes": Kubernetes{},
+					"stagingDomainName": DomainName{},
 				},
 			},
 			bytes.NewBuffer(nil),
-			[]string{"defaultDatabase", "--help"},
+			[]string{"developmentDatabase", "--help"},
 			"SQL database deployment and migrations management tool\n" +
 				"\n" +
 				"Usage:\n" +
-				"  environments defaultDatabase [command]\n" +
+				"  environments developmentDatabase COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
 				"  create      Constructs and starts a new instance of this resource.\n" +
 				"  destroy     Stops and removes running instance of this resource.\n" +
 				"  migrations  Manages the lifecycle of a database migration.\n" +
-				"  source      Print the data source name as a connection string.\n" +
+				"  source      Prints the data source name as a connection string.\n" +
 				"\n" +
 				"Flags:\n" +
-				"      --help   Show help information.\n" +
-				"\n" +
-				"Use \"environments defaultDatabase [command] --help\" for more information about a command.\n",
+				"      --help   Show help information.\n",
 		},
 	}
 

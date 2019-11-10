@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
@@ -20,7 +21,7 @@ type MigrationsSuite struct {
 	Driver     interface {
 		types.Creator
 		types.Destroyer
-		types.Sourced
+		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
@@ -58,7 +59,7 @@ func (r *MigrationsSuite) SetupSuite() {
 		},
 	}
 
-	r.Driver = docker.Postgres{
+	r.Driver = &docker.Postgres{
 		Name:    strings.ToLower(randomdata.SillyName()),
 		Version: "9.6",
 		DBName:  "unittest",
@@ -66,12 +67,12 @@ func (r *MigrationsSuite) SetupSuite() {
 	}
 
 	buffer := bytes.NewBuffer(nil)
-	assert.Nil(r.T(), r.Driver.Create(buffer))
+	assert.Nil(r.T(), r.Driver.Create(context.Background(), buffer))
 }
 
 func (r *MigrationsSuite) TearDownSuite() {
 	buffer := bytes.NewBuffer(nil)
-	assert.Nil(r.T(), r.Driver.Destroy(buffer))
+	assert.Nil(r.T(), r.Driver.Destroy(context.Background(), buffer))
 }
 
 func (r *MigrationsSuite) TearDownTest() {

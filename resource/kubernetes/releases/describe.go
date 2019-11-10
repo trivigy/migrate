@@ -1,6 +1,7 @@
 package releases
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
@@ -24,22 +25,25 @@ import (
 
 // Describe represents the cluster release inspect command object.
 type Describe struct {
-	common
-	Namespace string          `json:"namespace" yaml:"namespace"`
+	Namespace *string         `json:"namespace" yaml:"namespace"`
 	Releases  *types.Releases `json:"releases" yaml:"releases"`
 	Driver    interface {
-		types.KubeConfiged
+		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
-// InspectOptions is used for executing the Run() command.
+// InspectOptions is used for executing the run() command.
 type InspectOptions struct {
-	Env      string         `json:"env" yaml:"env"`
 	Name     string         `json:"name" yaml:"name"`
 	Version  semver.Version `json:"version" yaml:"version"`
 	Resource string         `json:"resource" yaml:"resource"`
 	Filter   string         `json:"filter" yaml:"filter"`
 }
+
+var _ interface {
+	types.Resource
+	types.Command
+} = new(Describe)
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
 func (r Describe) NewCommand(name string) *cobra.Command {
@@ -49,17 +53,13 @@ func (r Describe) NewCommand(name string) *cobra.Command {
 		Long:  "Prints release resources detail information",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			env, err := cmd.Flags().GetString("env")
-			if err != nil {
-				return err
-			}
-
 			parts := strings.Split(args[0], ":")
 			parts = append(parts, "")
 			name := parts[0]
 
 			version := semver.Version{}
 			if parts[1] != "" {
+				var err error
 				version, err = semver.Parse(parts[1])
 				if err != nil {
 					return err
@@ -70,16 +70,19 @@ func (r Describe) NewCommand(name string) *cobra.Command {
 			filter := args[2]
 
 			opts := InspectOptions{
-				Env:      env,
 				Name:     name,
 				Version:  version,
 				Resource: resource,
 				Filter:   filter,
 			}
-			return r.Run(cmd.OutOrStdout(), opts)
+			return r.run(context.Background(), cmd.OutOrStdout(), opts)
 		},
-		SilenceUsage: true,
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
+
+	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
+	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -99,17 +102,17 @@ func (r Describe) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r Describe) validation(args []string) error {
+func (r Describe) validation(cmd *cobra.Command, args []string) error {
 	if err := require.ExactArgs(args, 3); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Run is a starting point method for executing the cluster release inspect
+// run is a starting point method for executing the cluster release inspect
 // command.
-func (r Describe) Run(out io.Writer, opts InspectOptions) error {
-	kubectl, err := r.GetKubeCtl(r.Driver, r.Namespace)
+func (r Describe) run(ctx context.Context, out io.Writer, opts InspectOptions) error {
+	kubectl, err := GetK8sClientset(ctx, r.Driver, *r.Namespace)
 	if err != nil {
 		return err
 	}
@@ -142,14 +145,14 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
 			case *v1core.Pod:
 				result, err := kubectl.CoreV1().
-					Pods(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Pods(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
@@ -158,14 +161,14 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
 			case *v1core.ServiceAccount:
 				result, err := kubectl.CoreV1().
-					ServiceAccounts(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					ServiceAccounts(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
@@ -174,14 +177,14 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
 			case *v1core.ConfigMap:
 				result, err := kubectl.CoreV1().
-					ConfigMaps(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					ConfigMaps(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
@@ -190,14 +193,14 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
 			case *v1core.Endpoints:
 				result, err := kubectl.CoreV1().
-					Endpoints(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Endpoints(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
@@ -206,14 +209,14 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
 			case *v1core.Service:
 				result, err := kubectl.CoreV1().
-					Services(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Services(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
@@ -222,14 +225,14 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
 			case *v1rbac.Role:
 				result, err := kubectl.RbacV1().
-					Roles(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Roles(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
@@ -238,14 +241,14 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
 			case *v1rbac.RoleBinding:
 				result, err := kubectl.RbacV1().
-					RoleBindings(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					RoleBindings(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
@@ -254,7 +257,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
@@ -270,7 +273,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
@@ -286,7 +289,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
@@ -302,14 +305,14 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
 			case *v1apps.DaemonSet:
 				result, err := kubectl.AppsV1().
-					DaemonSets(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					DaemonSets(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
@@ -318,14 +321,14 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
 			case *v1apps.Deployment:
 				result, err := kubectl.AppsV1().
-					Deployments(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Deployments(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
@@ -334,14 +337,14 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}
 				fmt.Fprintf(out, "%s", output)
 			case *v1ext.Ingress:
 				result, err := kubectl.ExtensionsV1beta1().
-					Ingresses(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Ingresses(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					fmt.Fprintf(out, "%s", string(v1meta.StatusReasonNotFound))
@@ -350,7 +353,7 @@ func (r Describe) Run(out io.Writer, opts InspectOptions) error {
 					return err
 				}
 
-				output, err := r.FilterResult(result, opts.Filter)
+				output, err := FilterResult(result, opts.Filter)
 				if err != nil {
 					return err
 				}

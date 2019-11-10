@@ -2,6 +2,7 @@ package releases
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 	v1apps "k8s.io/api/apps/v1"
 	v1core "k8s.io/api/core/v1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/trivigy/migrate/v2/driver/docker"
@@ -20,31 +22,31 @@ import (
 
 type ReleasesSuite struct {
 	suite.Suite
-	Namespace string          `json:"namespace" yaml:"namespace"`
+	Namespace *string         `json:"namespace" yaml:"namespace"`
 	Releases  *types.Releases `json:"releases" yaml:"releases"`
 	Driver    interface {
 		types.Creator
 		types.Destroyer
-		types.KubeConfiged
+		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
 func (r *ReleasesSuite) SetupSuite() {
-	r.Namespace = "unittest"
+	r.Namespace = &[]string{"unittest"}[0]
 	r.Releases = &types.Releases{
 		{
 			Name:    "create-unittest-cluster",
 			Version: semver.Version{Major: 0, Minor: 0, Patch: 1},
-			Manifests: []interface{}{
+			Manifests: []runtime.Object{
 				&v1core.Service{
 					TypeMeta: v1meta.TypeMeta{
 						APIVersion: "v1",
 						Kind:       "Service",
 					},
 					ObjectMeta: v1meta.ObjectMeta{
-						Name: "locker",
+						Name: "unittest",
 						Labels: map[string]string{
-							"app": "locker",
+							"app": "unittest",
 						},
 					},
 					Spec: v1core.ServiceSpec{
@@ -55,7 +57,7 @@ func (r *ReleasesSuite) SetupSuite() {
 							},
 						},
 						Selector: map[string]string{
-							"app": "locker",
+							"app": "unittest",
 						},
 					},
 				},
@@ -100,17 +102,17 @@ func (r *ReleasesSuite) SetupSuite() {
 		},
 	}
 
-	r.Driver = docker.KIND{
+	r.Driver = &docker.Kind{
 		Name: strings.ToLower(randomdata.SillyName()),
 	}
 
 	buffer := bytes.NewBuffer(nil)
-	assert.Nil(r.T(), r.Driver.Create(buffer))
+	assert.Nil(r.T(), r.Driver.Create(context.Background(), buffer))
 }
 
 func (r *ReleasesSuite) TearDownSuite() {
 	buffer := bytes.NewBuffer(nil)
-	assert.Nil(r.T(), r.Driver.Destroy(buffer))
+	assert.Nil(r.T(), r.Driver.Destroy(context.Background(), buffer))
 }
 
 func (r *ReleasesSuite) TearDownTest() {

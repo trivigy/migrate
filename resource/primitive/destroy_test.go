@@ -23,12 +23,29 @@ func (r *DestroySuite) TestDestroyCommand() {
 		cmd        types.Command
 		buffer     *bytes.Buffer
 		args       []string
+		output     string
 	}{
 		{
 			true, "implement me",
-			Destroy{Driver: testutils.Driver{}},
+			Destroy{Driver: &testutils.Driver{}},
 			bytes.NewBuffer(nil),
 			[]string{},
+			"",
+		},
+		{
+			false, "",
+			Destroy{Driver: &testutils.Driver{}},
+			bytes.NewBuffer(nil),
+			[]string{"--help"},
+			"Stops and removes running instance of this resource\n" +
+				"\n" +
+				"Usage:\n" +
+				"  destroy [flags]\n" +
+				"\n" +
+				"Flags:\n" +
+				"  -m, --merge PATH   Merges specified json PATH with configured parameters.\n" +
+				"      --dry-run      Simulate parameter merging without resource execution.\n" +
+				"      --help         Show help information.\n",
 		},
 	}
 
@@ -37,6 +54,11 @@ func (r *DestroySuite) TestDestroyCommand() {
 		runner := func() {
 			err := testCase.cmd.Execute("destroy", testCase.buffer, testCase.args)
 			if err != nil {
+				panic(err.Error())
+			}
+
+			if testCase.output != testCase.buffer.String() {
+				fmt.Printf("%q\n", testCase.buffer.String())
 				panic(testCase.buffer.String())
 			}
 		}

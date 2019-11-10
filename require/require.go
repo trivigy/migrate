@@ -8,14 +8,14 @@ import (
 )
 
 // Args validates an args function and appends usage upon error.
-func Args(validateArgs func([]string) error) cobra.PositionalArgs {
+func Args(validateArgs func(*cobra.Command, []string) error) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
-		if err := validateArgs(args); err != nil {
+		if err := validateArgs(cmd, args); err != nil {
 			return fmt.Errorf(
-				"%s for %q\n\nUsage:  %s",
+				"%s for %q\n\n%s",
 				err.Error(),
 				cmd.CommandPath(),
-				cmd.UseLine(),
+				cmd.UsageString(),
 			)
 		}
 		return nil

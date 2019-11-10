@@ -9,53 +9,67 @@ import (
 	"os/user"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	dtypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/iam/v1"
+	"google.golang.org/api/option"
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
 
 	// postgres driver
 	_ "github.com/lib/pq"
 
-	mg8types "github.com/trivigy/migrate/v2/types"
+	"github.com/trivigy/migrate/v2/types"
 
 	"github.com/trivigy/migrate/v2/internal/retry"
 )
 
 // CloudSQL represents a driver for gcloud CloudSQL service.
 type CloudSQL struct {
-	Config
-	User     string `json:"user" yaml:"user"`
-	Password string `json:"password" yaml:"password"`
-	DBName   string `json:"dbName" yaml:"dbName"`
+	Profile
+	User     string `json:"user" yaml:"user" validate:"required"`
+	Password string `json:"password" yaml:"password" validate:"required"`
+	DBName   string `json:"dbName" yaml:"dbName" validate:"required"`
 }
 
+var _ interface {
+	types.Creator
+	types.Destroyer
+	types.Sourcer
+} = new(CloudSQL)
+
 // Create executes the resource creation process.
-func (r CloudSQL) Create(out io.Writer) error {
-	if err := r.EnsureInstance(out); err != nil {
+func (r CloudSQL) Create(ctx context.Context, out io.Writer) error {
+	ts, err := google.DefaultTokenSource(ctx, iam.CloudPlatformScope)
+	if err != nil {
 		return err
 	}
-	if err := r.EnsureUsers(out); err != nil {
+
+	if err := r.EnsureInstance(ctx, out, ts); err != nil {
 		return err
 	}
-	if err := r.EnsureDatabase(out); err != nil {
+	if err := r.EnsureUsers(ctx, out, ts); err != nil {
 		return err
 	}
-	if err := r.EnsureConnection(out); err != nil {
+	if err := r.EnsureDatabase(ctx, out, ts); err != nil {
+		return err
+	}
+	if err := r.EnsureConnection(ctx, out); err != nil {
 		return err
 	}
 	return nil
 }
 
 // EnsureInstance ensures that a cloudsql instance has been created.
-func (r CloudSQL) EnsureInstance(out io.Writer) error {
-	ctx := context.Background()
-	service, err := sqladmin.NewService(ctx)
+func (r CloudSQL) EnsureInstance(ctx context.Context, out io.Writer, ts oauth2.TokenSource) error {
+	service, err := sqladmin.NewService(ctx, option.WithTokenSource(ts))
 	if err != nil {
 		return err
 	}
@@ -83,7 +97,6 @@ func (r CloudSQL) EnsureInstance(out io.Writer) error {
 			return err
 		}
 
-		ctx := context.Background()
 		if err := r.WaitForOp(ctx, service, op.Name); err != nil {
 			return err
 		}
@@ -94,9 +107,8 @@ func (r CloudSQL) EnsureInstance(out io.Writer) error {
 }
 
 // EnsureUsers ensures that a specific user is setup correctly.
-func (r CloudSQL) EnsureUsers(out io.Writer) error {
-	ctx := context.Background()
-	service, err := sqladmin.NewService(ctx)
+func (r CloudSQL) EnsureUsers(ctx context.Context, out io.Writer, ts oauth2.TokenSource) error {
+	service, err := sqladmin.NewService(ctx, option.WithTokenSource(ts))
 	if err != nil {
 		return err
 	}
@@ -116,7 +128,6 @@ func (r CloudSQL) EnsureUsers(out io.Writer) error {
 				return err
 			}
 
-			ctx := context.Background()
 			if err := r.WaitForOp(ctx, service, op.Name); err != nil {
 				return err
 			}
@@ -132,7 +143,6 @@ func (r CloudSQL) EnsureUsers(out io.Writer) error {
 			return err
 		}
 
-		ctx := context.Background()
 		if err := r.WaitForOp(ctx, service, op.Name); err != nil {
 			return err
 		}
@@ -143,9 +153,8 @@ func (r CloudSQL) EnsureUsers(out io.Writer) error {
 
 // EnsureDatabase ensures that a specific database on the cloudsql instance has
 // been created.
-func (r CloudSQL) EnsureDatabase(out io.Writer) error {
-	ctx := context.Background()
-	service, err := sqladmin.NewService(ctx)
+func (r CloudSQL) EnsureDatabase(ctx context.Context, out io.Writer, ts oauth2.TokenSource) error {
+	service, err := sqladmin.NewService(ctx, option.WithTokenSource(ts))
 	if err != nil {
 		return err
 	}
@@ -170,7 +179,6 @@ func (r CloudSQL) EnsureDatabase(out io.Writer) error {
 			return err
 		}
 
-		ctx := context.Background()
 		if err := r.WaitForOp(ctx, service, op.Name); err != nil {
 			return err
 		}
@@ -182,7 +190,7 @@ func (r CloudSQL) EnsureDatabase(out io.Writer) error {
 
 // EnsureConnection starts a gce-proxy container and ensures that a connection
 // to the cloudsql database may be established.
-func (r CloudSQL) EnsureConnection(out io.Writer) error {
+func (r CloudSQL) EnsureConnection(ctx context.Context, out io.Writer) error {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithVersion("1.38"),
@@ -192,10 +200,9 @@ func (r CloudSQL) EnsureConnection(out io.Writer) error {
 	}
 	defer docker.Close()
 
-	ctx := context.Background()
 	filter := filters.NewArgs()
 	filter.Add("name", r.Name+"-gce-proxy")
-	listOpts := types.ContainerListOptions{Filters: filter}
+	listOpts := dtypes.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
 		return err
@@ -205,9 +212,8 @@ func (r CloudSQL) EnsureConnection(out io.Writer) error {
 		return nil
 	}
 
-	ctx = context.Background()
 	refStr := "gcr.io/cloudsql-docker/gce-proxy:1.14"
-	pullOpts := types.ImagePullOptions{}
+	pullOpts := dtypes.ImagePullOptions{}
 	reader, err := docker.ImagePull(ctx, refStr, pullOpts)
 	if err != nil {
 		return err
@@ -217,7 +223,6 @@ func (r CloudSQL) EnsureConnection(out io.Writer) error {
 		return err
 	}
 
-	ctx = context.Background()
 	containerPort, err := nat.NewPort("tcp", "5432")
 	if err != nil {
 		return err
@@ -256,20 +261,18 @@ func (r CloudSQL) EnsureConnection(out io.Writer) error {
 		return err
 	}
 
-	ctx = context.Background()
-	startOpts := types.ContainerStartOptions{}
+	startOpts := dtypes.ContainerStartOptions{}
 	if err := docker.ContainerStart(ctx, resp.ID, startOpts); err != nil {
 		return err
 	}
 
-	ctx = context.Background()
 	info, err := docker.ContainerInspect(ctx, resp.ID)
 	if err != nil {
 		return err
 	}
 
 	address := info.NetworkSettings.IPAddress
-	url := mg8types.PsqlDSN{Host: address}
+	url := types.PsqlDSN{Host: address}
 	if r.User != "" {
 		url.User = r.User
 	}
@@ -284,7 +287,8 @@ func (r CloudSQL) EnsureConnection(out io.Writer) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	if err := retry.Do(ctx, 1*time.Second, func() (bool, error) {
@@ -304,18 +308,23 @@ func (r CloudSQL) EnsureConnection(out io.Writer) error {
 }
 
 // Destroy executes the resource destruction process.
-func (r CloudSQL) Destroy(out io.Writer) error {
-	if err := r.DestroyConnection(out); err != nil {
+func (r CloudSQL) Destroy(ctx context.Context, out io.Writer) error {
+	ts, err := google.DefaultTokenSource(ctx, iam.CloudPlatformScope)
+	if err != nil {
 		return err
 	}
-	if err := r.DestroyDatabase(out); err != nil {
+
+	if err := r.DestroyConnection(ctx, out); err != nil {
+		return err
+	}
+	if err := r.DestroyDatabase(ctx, out, ts); err != nil {
 		return err
 	}
 	return nil
 }
 
 // DestroyConnection deletes the gce-proxy container.
-func (r CloudSQL) DestroyConnection(out io.Writer) error {
+func (r CloudSQL) DestroyConnection(ctx context.Context, out io.Writer) error {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithVersion("1.38"),
@@ -325,10 +334,9 @@ func (r CloudSQL) DestroyConnection(out io.Writer) error {
 	}
 	defer docker.Close()
 
-	ctx := context.Background()
 	filter := filters.NewArgs()
 	filter.Add("name", r.Name+"-gce-proxy")
-	listOpts := types.ContainerListOptions{Filters: filter}
+	listOpts := dtypes.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
 		return err
@@ -338,8 +346,7 @@ func (r CloudSQL) DestroyConnection(out io.Writer) error {
 		return nil
 	}
 
-	ctx = context.Background()
-	logsOpts := types.ContainerLogsOptions{
+	logsOpts := dtypes.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	}
@@ -352,7 +359,6 @@ func (r CloudSQL) DestroyConnection(out io.Writer) error {
 		return err
 	}
 
-	ctx = context.Background()
 	if err := docker.ContainerKill(ctx, containers[0].ID, "KILL"); err != nil {
 		return err
 	}
@@ -360,9 +366,8 @@ func (r CloudSQL) DestroyConnection(out io.Writer) error {
 }
 
 // DestroyDatabase removes the specific database from the cloudsql instance.
-func (r CloudSQL) DestroyDatabase(out io.Writer) error {
-	ctx := context.Background()
-	service, err := sqladmin.NewService(ctx)
+func (r CloudSQL) DestroyDatabase(ctx context.Context, out io.Writer, ts oauth2.TokenSource) error {
+	service, err := sqladmin.NewService(ctx, option.WithTokenSource(ts))
 	if err != nil {
 		return err
 	}
@@ -392,7 +397,6 @@ func (r CloudSQL) DestroyDatabase(out io.Writer) error {
 		return err
 	}
 
-	ctx = context.Background()
 	if err := r.WaitForOp(ctx, service, op.Name); err != nil {
 		return err
 	}
@@ -400,37 +404,35 @@ func (r CloudSQL) DestroyDatabase(out io.Writer) error {
 }
 
 // Source returns the data source name for the driver.
-func (r CloudSQL) Source() (string, error) {
+func (r CloudSQL) Source(ctx context.Context, out io.Writer) error {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithVersion("1.38"),
 	)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer docker.Close()
 
-	ctx := context.Background()
 	filter := filters.NewArgs()
 	filter.Add("name", r.Name+"-gce-proxy")
-	listOpts := types.ContainerListOptions{Filters: filter}
+	listOpts := dtypes.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	if len(containers) == 0 {
-		return "", fmt.Errorf("container %q not found", r.Name+"-gce-proxy")
+		return fmt.Errorf("container %q not found", r.Name+"-gce-proxy")
 	}
 
-	ctx = context.Background()
 	info, err := docker.ContainerInspect(ctx, containers[0].ID)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	address := info.NetworkSettings.IPAddress
-	url := mg8types.PsqlDSN{Host: address}
+	url := types.PsqlDSN{Host: address}
 	if r.User != "" {
 		url.User = r.User
 	}
@@ -440,5 +442,9 @@ func (r CloudSQL) Source() (string, error) {
 	if r.DBName != "" {
 		url.DBName = r.DBName
 	}
-	return url.Source(), nil
+
+	if _, err := out.Write([]byte(url.Source())); err != nil {
+		return err
+	}
+	return nil
 }

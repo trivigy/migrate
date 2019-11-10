@@ -3,6 +3,7 @@ package releases
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 
 	"github.com/ghodss/yaml"
@@ -12,14 +13,20 @@ import (
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/trivigy/migrate/v2/types"
 )
 
-type common struct{}
+// GetK8sClientset defines a function which generates a new client connection
+// to kubernetes.
+func GetK8sClientset(ctx context.Context, driver types.Sourcer, namespace string) (*kubernetes.Clientset, error) {
+	output := bytes.NewBuffer(nil)
+	if err := driver.Source(ctx, output); err != nil {
+		return nil, err
+	}
 
-func (r common) GetKubeCtl(driver types.KubeConfiged, namespace string) (*kubernetes.Clientset, error) {
-	kubeConfig, err := driver.KubeConfig()
+	kubeConfig, err := clientcmd.RESTConfigFromKubeConfig(output.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +64,8 @@ func (r common) GetKubeCtl(driver types.KubeConfiged, namespace string) (*kubern
 	return kubectl, nil
 }
 
-func (r common) FallBackNS(namespace, fallback string) string {
+// FallBackNS defines a helper function for ensuring namespace fallback.
+func FallBackNS(namespace, fallback string) string {
 	if namespace != "" {
 		return namespace
 	}
@@ -69,7 +77,8 @@ func (r common) FallBackNS(namespace, fallback string) string {
 	return "default"
 }
 
-func (r common) NewEmbeddedTable() (*tablewriter.Table, *bytes.Buffer) {
+// NewEmbeddedTable defines helper function for generating tabled data.
+func NewEmbeddedTable() (*tablewriter.Table, *bytes.Buffer) {
 	buf := bytes.NewBuffer(nil)
 	tbl := tablewriter.NewWriter(buf)
 	tbl.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -78,7 +87,8 @@ func (r common) NewEmbeddedTable() (*tablewriter.Table, *bytes.Buffer) {
 	return tbl, buf
 }
 
-func (r common) FilterResult(value interface{}, filter string) (string, error) {
+// FilterResult helper function allows jq like filtering through a json.
+func FilterResult(value interface{}, filter string) (string, error) {
 	rbytes, err := json.Marshal(value)
 	if err != nil {
 		return "", err

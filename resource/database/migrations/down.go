@@ -1,12 +1,15 @@
 package migrations
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/url"
 
 	"github.com/spf13/cobra"
 
+	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/internal/store"
 	"github.com/trivigy/migrate/v2/internal/store/model"
 	"github.com/trivigy/migrate/v2/require"
@@ -15,18 +18,22 @@ import (
 
 // Down represents the database migration down command object.
 type Down struct {
-	common
 	Migrations *types.Migrations `json:"migrations" yaml:"migrations"`
 	Driver     interface {
-		types.Sourced
+		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
-// DownOptions is used for executing the Run() command.
+// DownOptions is used for executing the run() command.
 type DownOptions struct {
 	Limit  int  `json:"limit" yaml:"limit"`
 	DryRun bool `json:"dryRun" yaml:"dryRun"`
 }
+
+var _ interface {
+	types.Resource
+	types.Command
+} = new(Down)
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
 func (r Down) NewCommand(name string) *cobra.Command {
@@ -47,10 +54,14 @@ func (r Down) NewCommand(name string) *cobra.Command {
 			}
 
 			opts := DownOptions{Limit: limit, DryRun: dryRun}
-			return r.Run(cmd.OutOrStdout(), opts)
+			return r.run(context.Background(), cmd.OutOrStdout(), opts)
 		},
-		SilenceUsage: true,
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
+
+	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
+	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -78,31 +89,31 @@ func (r Down) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r Down) validation(args []string) error {
+func (r Down) validation(cmd *cobra.Command, args []string) error {
 	if err := require.NoArgs(args); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Run is a starting point method for executing the down command.
-func (r Down) Run(out io.Writer, opts DownOptions) error {
-	source, err := r.Driver.Source()
+// run is a starting point method for executing the down command.
+func (r Down) run(ctx context.Context, out io.Writer, opts DownOptions) error {
+	source := bytes.NewBuffer(nil)
+	if err := r.Driver.Source(ctx, source); err != nil {
+		return err
+	}
+
+	u, err := url.Parse(source.String())
 	if err != nil {
 		return err
 	}
 
-	u, err := url.Parse(source)
+	db, err := store.Open(u.Scheme, source.String())
 	if err != nil {
 		return err
 	}
 
-	db, err := store.Open(u.Scheme, source)
-	if err != nil {
-		return err
-	}
-
-	migrationPlan, err := r.GenerateMigrationPlan(db, types.DirectionDown, r.Migrations)
+	migrationPlan, err := GenerateMigrationPlan(db, types.DirectionDown, r.Migrations)
 	if err != nil {
 		return err
 	}
