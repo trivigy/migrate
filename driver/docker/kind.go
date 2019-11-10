@@ -2,29 +2,99 @@ package docker
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
+	"gopkg.in/yaml.v3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/kind/cmd/kind"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
 	logutil "sigs.k8s.io/kind/pkg/log"
+
+	"github.com/trivigy/migrate/v2/types"
 )
 
-// KIND represents a driver for the Kubernetes IN Docker (sigs.k8s.io/kind)
+// Kind represents a driver for the Kubernetes IN Docker (sigs.k8s.io/kind)
 // project.
-type KIND struct {
-	Name   string
-	Images []string
-	Config map[string]interface{}
+type Kind struct {
+	Name   string      `json:"name,omitempty" yaml:"name,omitempty"`
+	Images []string    `json:"images,omitempty" yaml:"images,omitempty"`
+	Config interface{} `json:"config,omitempty" yaml:"config,omitempty"`
+}
+
+var _ interface {
+	types.Creator
+	types.Destroyer
+	types.Sourcer
+} = new(Kind)
+
+// UnmarshalJSON defines custom json unmarshalling procedure.
+func (r *Kind) UnmarshalJSON(b []byte) error {
+	obj := map[string]interface{}{}
+	if err := json.Unmarshal(b, &obj); err != nil {
+		return err
+	}
+
+	if name, ok := obj["name"]; ok {
+		r.Name = name.(string)
+	}
+
+	if images, ok := obj["images"]; ok {
+		convert := make([]string, len(images.([]interface{})))
+		for i, image := range images.([]interface{}) {
+			convert[i] = image.(string)
+		}
+		r.Images = convert
+	}
+
+	if config, ok := obj["config"]; ok {
+		rbytes, err := json.Marshal(config)
+		if err != nil {
+			return err
+		}
+
+		typeMeta := metav1.TypeMeta{}
+		if r.Config != nil {
+			cfg, ok := r.Config.(*v1alpha3.Cluster)
+			if !ok {
+				return fmt.Errorf("unknown config type: %T", r.Config)
+			}
+			typeMeta = cfg.TypeMeta
+		}
+		if err := json.Unmarshal(rbytes, &typeMeta); err != nil {
+			return err
+		}
+
+		// decode specific (apiVersion, kind)
+		switch typeMeta.APIVersion {
+		case "kind.sigs.k8s.io/v1alpha3":
+			if typeMeta.Kind != "Cluster" {
+				return fmt.Errorf("unknown kind %s for apiVersion: %s", typeMeta.APIVersion, typeMeta.Kind)
+			}
+			cfg := &v1alpha3.Cluster{}
+			if r.Config != nil {
+				if cfg, ok = r.Config.(*v1alpha3.Cluster); !ok {
+					return fmt.Errorf("unknown config type: %T", r.Config)
+				}
+			}
+			if err := json.Unmarshal(rbytes, cfg); err != nil {
+				return err
+			}
+			r.Config = cfg
+		}
+	}
+
+	return nil
 }
 
 // Create executes the resource creation process.
-func (r KIND) Create(out io.Writer) error {
+func (r Kind) Create(ctx context.Context, out io.Writer) error {
 	args := []string{
 		"create", "cluster",
 		"--name", r.Name,
@@ -36,7 +106,7 @@ func (r KIND) Create(out io.Writer) error {
 			return err
 		}
 
-		tmpfile, err := ioutil.TempFile(os.TempDir(), "lockerKind-*.yaml")
+		tmpfile, err := ioutil.TempFile(os.TempDir(), "kind-*.yaml")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -68,7 +138,7 @@ func (r KIND) Create(out io.Writer) error {
 }
 
 // Destroy executes the resource destruction process.
-func (r KIND) Destroy(out io.Writer) error {
+func (r Kind) Destroy(ctx context.Context, out io.Writer) error {
 	if err := r.Execute(out, []string{
 		"delete", "cluster",
 		"--name", r.Name,
@@ -80,7 +150,7 @@ func (r KIND) Destroy(out io.Writer) error {
 }
 
 // Execute is a wrapper function to the kind command runner.
-func (r KIND) Execute(out io.Writer, args []string) error {
+func (r Kind) Execute(out io.Writer, args []string) error {
 	log.SetOutput(out)
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
@@ -126,25 +196,23 @@ func (r KIND) Execute(out io.Writer, args []string) error {
 	return nil
 }
 
-// KubeConfig returns the content of kubeconfig file.
-func (r KIND) KubeConfig() (*rest.Config, error) {
-	out := bytes.NewBuffer(nil)
-	if err := r.Execute(out, []string{
+// Source returns the data source name for the driver.
+func (r Kind) Source(ctx context.Context, out io.Writer) error {
+	output := bytes.NewBuffer(nil)
+	if err := r.Execute(output, []string{
 		"get", "kubeconfig-path",
 		"--name", r.Name,
 	}); err != nil {
-		return nil, err
+		return err
 	}
 
-	kubeConfigBytes, err := ioutil.ReadFile(strings.TrimSpace(out.String()))
+	rbytes, err := ioutil.ReadFile(strings.TrimSpace(output.String()))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	kubeConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigBytes)
-	if err != nil {
-		return nil, err
+	if _, err := out.Write([]byte(string(rbytes) + "\n")); err != nil {
+		return err
 	}
-
-	return kubeConfig, nil
+	return nil
 }

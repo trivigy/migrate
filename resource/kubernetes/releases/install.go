@@ -1,6 +1,7 @@
 package releases
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"sort"
@@ -21,18 +22,22 @@ import (
 
 // Install represents the cluster release install command object.
 type Install struct {
-	common
-	Namespace string          `json:"namespace" yaml:"namespace"`
+	Namespace *string         `json:"namespace" yaml:"namespace"`
 	Releases  *types.Releases `json:"releases" yaml:"releases"`
 	Driver    interface {
-		types.KubeConfiged
+		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
-// InstallOptions is used for executing the Run() command.
+// InstallOptions is used for executing the run() command.
 type InstallOptions struct {
 	Seq int `json:"seq" yaml:"seq"`
 }
+
+var _ interface {
+	types.Resource
+	types.Command
+} = new(Install)
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
 func (r Install) NewCommand(name string) *cobra.Command {
@@ -48,10 +53,14 @@ func (r Install) NewCommand(name string) *cobra.Command {
 			}
 
 			opts := InstallOptions{Seq: seq}
-			return r.Run(cmd.OutOrStdout(), opts)
+			return r.run(context.Background(), cmd.OutOrStdout(), opts)
 		},
-		SilenceUsage: true,
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
+
+	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
+	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -75,17 +84,17 @@ func (r Install) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r Install) validation(args []string) error {
+func (r Install) validation(cmd *cobra.Command, args []string) error {
 	if err := require.NoArgs(args); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Run is a starting point method for executing the cluster release install
+// run is a starting point method for executing the cluster release install
 // command.
-func (r Install) Run(out io.Writer, opts InstallOptions) error {
-	kubectl, err := r.GetKubeCtl(r.Driver, r.Namespace)
+func (r Install) run(ctx context.Context, out io.Writer, opts InstallOptions) error {
+	kubectl, err := GetK8sClientset(ctx, r.Driver, *r.Namespace)
 	if err != nil {
 		return err
 	}
@@ -108,11 +117,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1core.Pod:
 				_, err := kubectl.CoreV1().
-					Pods(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Pods(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						Pods(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						Pods(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -120,11 +129,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1core.ServiceAccount:
 				_, err := kubectl.CoreV1().
-					ServiceAccounts(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					ServiceAccounts(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						ServiceAccounts(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						ServiceAccounts(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -132,11 +141,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1core.ConfigMap:
 				_, err := kubectl.CoreV1().
-					ConfigMaps(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					ConfigMaps(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						ConfigMaps(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						ConfigMaps(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -144,11 +153,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1core.Endpoints:
 				_, err := kubectl.CoreV1().
-					ConfigMaps(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					ConfigMaps(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						Endpoints(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						Endpoints(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -156,11 +165,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1core.Service:
 				_, err := kubectl.CoreV1().
-					Services(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Services(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						Services(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						Services(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -168,11 +177,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1core.Secret:
 				_, err := kubectl.CoreV1().
-					Secrets(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Secrets(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						Secrets(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						Secrets(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -180,11 +189,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1rbac.Role:
 				_, err := kubectl.RbacV1().
-					Roles(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Roles(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.RbacV1().
-						Roles(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						Roles(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -192,11 +201,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1rbac.RoleBinding:
 				_, err := kubectl.RbacV1().
-					RoleBindings(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					RoleBindings(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.RbacV1().
-						RoleBindings(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						RoleBindings(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -240,11 +249,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1apps.DaemonSet:
 				_, err := kubectl.AppsV1().
-					DaemonSets(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					DaemonSets(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.AppsV1().
-						DaemonSets(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						DaemonSets(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -252,11 +261,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1apps.Deployment:
 				_, err := kubectl.AppsV1().
-					Deployments(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Deployments(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.AppsV1().
-						Deployments(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						Deployments(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -264,11 +273,11 @@ func (r Install) Run(out io.Writer, opts InstallOptions) error {
 				}
 			case *v1ext.Ingress:
 				_, err := kubectl.ExtensionsV1beta1().
-					Ingresses(r.FallBackNS(manifest.Namespace, r.Namespace)).
+					Ingresses(FallBackNS(manifest.Namespace, *r.Namespace)).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.ExtensionsV1beta1().
-						Ingresses(r.FallBackNS(manifest.Namespace, r.Namespace)).
+						Ingresses(FallBackNS(manifest.Namespace, *r.Namespace)).
 						Create(manifest)
 					if err != nil {
 						return err

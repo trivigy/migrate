@@ -12,27 +12,27 @@ import (
 	containerpb "google.golang.org/genproto/googleapis/container/v1"
 )
 
-// Config represents the shared configuration information for all gcloud
+// Profile represents the shared configuration information for all gcloud
 // resource drivers.
-type Config struct {
-	Name      string `json:"name" yaml:"name"`
-	ProjectID string `json:"projectID" yaml:"projectID"`
-	Location  string `json:"location" yaml:"location"`
+type Profile struct {
+	Name      string `json:"name" yaml:"name" validate:"required"`
+	ProjectID string `json:"projectID" yaml:"projectID" validate:"required"`
+	Location  string `json:"location" yaml:"location" validate:"required"`
 }
 
 // BasePath returns the base location path for kubernetes resources.
-func (r Config) BasePath() string {
+func (r Profile) BasePath() string {
 	return fmt.Sprintf("projects/%s/locations/%s", r.ProjectID, r.Location)
 }
 
 // Region extracts and returns the cluster region from the Location field.
-func (r Config) Region() string {
+func (r Profile) Region() string {
 	parts := strings.Split(r.Location, "-")
 	return strings.Join(parts[:2], "-")
 }
 
 // WaitForOp allows for waiting of completion of an api Operation.
-func (r Config) WaitForOp(ctx context.Context, service interface{}, opName string) error {
+func (r Profile) WaitForOp(ctx context.Context, service interface{}, opName string) error {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 

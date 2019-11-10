@@ -7,32 +7,29 @@ import (
 
 	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
-	"github.com/trivigy/migrate/v2/resource/database"
 	"github.com/trivigy/migrate/v2/resource/primitive"
 	"github.com/trivigy/migrate/v2/types"
 )
 
-// Database represents a database root command.
-type Database struct {
-	Migrations *types.Migrations `json:"migrations" yaml:"migrations"`
-	Driver     interface {
+// Deployment represents a deployment root command.
+type Deployment struct {
+	Driver interface {
 		types.Creator
 		types.Destroyer
-		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
 var _ interface {
 	types.Resource
 	types.Command
-} = new(Database)
+} = new(Deployment)
 
 // NewCommand returns a new cobra.Command object.
-func (r Database) NewCommand(name string) *cobra.Command {
+func (r Deployment) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name + " COMMAND",
-		Short: "SQL database deployment and migrations management tool.",
-		Long:  "SQL database deployment and migrations management tool",
+		Short: "Infrastructure setup/teardown management commands.",
+		Long:  "Infrastructure setup/teardown management commands",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil
@@ -44,19 +41,8 @@ func (r Database) NewCommand(name string) *cobra.Command {
 	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	cmd.AddCommand(
-		primitive.Create{
-			Driver: r.Driver,
-		}.NewCommand("create"),
-		primitive.Destroy{
-			Driver: r.Driver,
-		}.NewCommand("destroy"),
-		primitive.Source{
-			Driver: r.Driver,
-		}.NewCommand("source"),
-		database.Migrations{
-			Migrations: r.Migrations,
-			Driver:     r.Driver,
-		}.NewCommand("migrations"),
+		primitive.Create{Driver: r.Driver}.NewCommand("create"),
+		primitive.Destroy{Driver: r.Driver}.NewCommand("destroy"),
 	)
 
 	flags := cmd.Flags()
@@ -66,7 +52,7 @@ func (r Database) NewCommand(name string) *cobra.Command {
 }
 
 // Execute runs the command.
-func (r Database) Execute(name string, out io.Writer, args []string) error {
+func (r Deployment) Execute(name string, out io.Writer, args []string) error {
 	main := r.NewCommand(name)
 	main.SetOut(out)
 	main.SetArgs(args)
@@ -77,7 +63,7 @@ func (r Database) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r Database) validation(cmd *cobra.Command, args []string) error {
+func (r Deployment) validation(cmd *cobra.Command, args []string) error {
 	if err := require.ExactArgs(args, 1); err != nil {
 		return err
 	}

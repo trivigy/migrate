@@ -8,14 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/trivigy/migrate/v2/internal/testutils"
 	"github.com/trivigy/migrate/v2/types"
 )
 
-type DatabaseSuite struct {
+type DeploymentSuite struct {
 	suite.Suite
 }
 
-func (r *DatabaseSuite) TestDatabaseCommand() {
+func (r *DeploymentSuite) TestDeploymentCommand() {
 	testCases := []struct {
 		shouldFail bool
 		onFail     string
@@ -25,50 +26,36 @@ func (r *DatabaseSuite) TestDatabaseCommand() {
 		output     string
 	}{
 		{
-			true,
-			"accepts 1 arg(s), received 0 for \"database\"\n" +
-				"\n" +
-				"Usage:\n" +
-				"  database COMMAND [flags]\n" +
-				"\n" +
-				"Available Commands:\n" +
-				"  create      Constructs and starts a new instance of this resource.\n" +
-				"  destroy     Stops and removes running instance of this resource.\n" +
-				"  migrations  Manages the lifecycle of a database migration.\n" +
-				"  source      Prints the data source name as a connection string.\n" +
-				"\n" +
-				"Flags:\n" +
-				"      --help   Show help information.\n",
-			Database{},
+			true, "implement me",
+			Deployment{Driver: &testutils.Driver{}},
 			bytes.NewBuffer(nil),
-			[]string{},
+			[]string{"create"},
 			"",
 		},
 		{
-			false, "",
-			Database{},
-			bytes.NewBuffer(nil),
-			[]string{"--help"},
-			"SQL database deployment and migrations management tool\n" +
+			true,
+			"accepts 1 arg(s), received 0 for \"deployment\"\n" +
 				"\n" +
 				"Usage:\n" +
-				"  database COMMAND [flags]\n" +
+				"  deployment COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
 				"  create      Constructs and starts a new instance of this resource.\n" +
 				"  destroy     Stops and removes running instance of this resource.\n" +
-				"  migrations  Manages the lifecycle of a database migration.\n" +
-				"  source      Prints the data source name as a connection string.\n" +
 				"\n" +
 				"Flags:\n" +
 				"      --help   Show help information.\n",
+			Deployment{Driver: &testutils.Driver{}},
+			bytes.NewBuffer(nil),
+			[]string{},
+			"",
 		},
 	}
 
 	for i, testCase := range testCases {
 		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
 		runner := func() {
-			err := testCase.cmd.Execute("database", testCase.buffer, testCase.args)
+			err := testCase.cmd.Execute("deployment", testCase.buffer, testCase.args)
 			if err != nil {
 				panic(err.Error())
 			}
@@ -87,6 +74,6 @@ func (r *DatabaseSuite) TestDatabaseCommand() {
 	}
 }
 
-func TestDatabaseSuite(t *testing.T) {
-	suite.Run(t, new(DatabaseSuite))
+func TestDeploymentSuite(t *testing.T) {
+	suite.Run(t, new(DeploymentSuite))
 }

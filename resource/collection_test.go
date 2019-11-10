@@ -25,24 +25,47 @@ func (r *CollectionSuite) TestCollectionCommand() {
 		output     string
 	}{
 		{
+			true,
+			"accepts 1 arg(s), received 0 for \"collection\"\n" +
+				"\n" +
+				"Usage:\n" +
+				"  collection COMMAND [flags]\n" +
+				"\n" +
+				"Available Commands:\n" +
+				"  database    SQL database deployment and migrations management tool.\n" +
+				"  domainName  Controls instance of domain name service resource.\n" +
+				"  kubernetes  Kubernetes cluster release and deployment controller.\n" +
+				"\n" +
+				"Flags:\n" +
+				"      --help   Show help information.\n",
+			Collection{
+				"database":   Database{},
+				"kubernetes": Kubernetes{},
+				"domainName": DomainName{},
+			},
+			bytes.NewBuffer(nil),
+			[]string{},
+			"",
+		},
+		{
 			false, "",
 			Collection{
 				"database":   Database{},
 				"kubernetes": Kubernetes{},
+				"domainName": DomainName{},
 			},
 			bytes.NewBuffer(nil),
 			[]string{"--help"},
 			"Usage:\n" +
-				"  collection [command]\n" +
+				"  collection COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
 				"  database    SQL database deployment and migrations management tool.\n" +
+				"  domainName  Controls instance of domain name service resource.\n" +
 				"  kubernetes  Kubernetes cluster release and deployment controller.\n" +
 				"\n" +
 				"Flags:\n" +
-				"      --help   Show help information.\n" +
-				"\n" +
-				"Use \"collection [command] --help\" for more information about a command.\n",
+				"      --help   Show help information.\n",
 		},
 	}
 

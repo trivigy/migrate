@@ -23,12 +23,29 @@ func (r *CreateSuite) TestCreateCommand() {
 		cmd        types.Command
 		buffer     *bytes.Buffer
 		args       []string
+		output     string
 	}{
 		{
 			true, "implement me",
-			Create{Driver: testutils.Driver{}},
+			Create{Driver: &testutils.Driver{}},
 			bytes.NewBuffer(nil),
 			[]string{},
+			"",
+		},
+		{
+			false, "",
+			Create{Driver: &testutils.Driver{}},
+			bytes.NewBuffer(nil),
+			[]string{"--help"},
+			"Constructs and starts a new instance of this resource\n" +
+				"\n" +
+				"Usage:\n" +
+				"  create [flags]\n" +
+				"\n" +
+				"Flags:\n" +
+				"  -m, --merge PATH   Merges specified json PATH with configured parameters.\n" +
+				"      --dry-run      Simulate parameter merging without resource execution.\n" +
+				"      --help         Show help information.\n",
 		},
 	}
 
@@ -37,6 +54,11 @@ func (r *CreateSuite) TestCreateCommand() {
 		runner := func() {
 			err := testCase.cmd.Execute("create", testCase.buffer, testCase.args)
 			if err != nil {
+				panic(err.Error())
+			}
+
+			if testCase.output != testCase.buffer.String() {
+				fmt.Printf("%q\n", testCase.buffer.String())
 				panic(testCase.buffer.String())
 			}
 		}

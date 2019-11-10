@@ -1,4 +1,4 @@
-package resource
+package primitive
 
 import (
 	"bytes"
@@ -8,14 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/trivigy/migrate/v2/internal/testutils"
 	"github.com/trivigy/migrate/v2/types"
 )
 
-type DNSSuite struct {
+type SourceSuite struct {
 	suite.Suite
 }
 
-func (r *DNSSuite) TestDNSCommand() {
+func (r *SourceSuite) TestSourceCommand() {
 	testCases := []struct {
 		shouldFail bool
 		onFail     string
@@ -25,30 +26,33 @@ func (r *DNSSuite) TestDNSCommand() {
 		output     string
 	}{
 		{
+			true, "implement me",
+			Source{Driver: &testutils.Driver{}},
+			bytes.NewBuffer(nil),
+			[]string{},
+			"",
+		},
+		{
 			false, "",
-			DNS{},
+			Source{Driver: &testutils.Driver{}},
 			bytes.NewBuffer(nil),
 			[]string{"--help"},
-			"Controls instance of domain name system resource\n" +
+			"Prints the data source name as a connection string\n" +
 				"\n" +
 				"Usage:\n" +
-				"  dns [command]\n" +
-				"\n" +
-				"Available Commands:\n" +
-				"  create      Constructs and starts a new instance of this resource.\n" +
-				"  destroy     Stops and removes running instance of this resource.\n" +
+				"  create [flags]\n" +
 				"\n" +
 				"Flags:\n" +
-				"      --help   Show help information.\n" +
-				"\n" +
-				"Use \"dns [command] --help\" for more information about a command.\n",
+				"  -m, --merge PATH   Merges specified json PATH with configured parameters.\n" +
+				"      --dry-run      Simulate parameter merging without resource execution.\n" +
+				"      --help         Show help information.\n",
 		},
 	}
 
 	for i, testCase := range testCases {
 		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
 		runner := func() {
-			err := testCase.cmd.Execute("dns", testCase.buffer, testCase.args)
+			err := testCase.cmd.Execute("create", testCase.buffer, testCase.args)
 			if err != nil {
 				panic(err.Error())
 			}
@@ -67,6 +71,6 @@ func (r *DNSSuite) TestDNSCommand() {
 	}
 }
 
-func TestDNSSuite(t *testing.T) {
-	suite.Run(t, new(DNSSuite))
+func TestSourceSuite(t *testing.T) {
+	suite.Run(t, new(SourceSuite))
 }

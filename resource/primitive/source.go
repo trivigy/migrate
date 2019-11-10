@@ -15,24 +15,24 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-// Destroy represents the database destroy command.
-type Destroy struct {
+// Source represents the database source command object.
+type Source struct {
 	Driver interface {
-		types.Destroyer
+		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
 var _ interface {
 	types.Resource
 	types.Command
-} = new(Destroy)
+} = new(Source)
 
-// NewCommand returns a new cobra.Command destroy command object.
-func (r Destroy) NewCommand(name string) *cobra.Command {
+// NewCommand creates a new cobra.Command, configures it and returns it.
+func (r Source) NewCommand(name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name,
-		Short: "Stops and removes running instance of this resource.",
-		Long:  "Stops and removes running instance of this resource",
+		Short: "Prints the data source name as a connection string.",
+		Long:  "Prints the data source name as a connection string",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			merge, _ := cmd.Flags().GetStringSlice("merge")
@@ -85,7 +85,7 @@ func (r Destroy) NewCommand(name string) *cobra.Command {
 }
 
 // Execute runs the command.
-func (r Destroy) Execute(name string, out io.Writer, args []string) error {
+func (r Source) Execute(name string, out io.Writer, args []string) error {
 	cmd := r.NewCommand(name)
 	cmd.SetOut(out)
 	cmd.SetArgs(args)
@@ -96,16 +96,16 @@ func (r Destroy) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r Destroy) validation(cmd *cobra.Command, args []string) error {
+func (r Source) validation(cmd *cobra.Command, args []string) error {
 	if err := require.NoArgs(args); err != nil {
 		return err
 	}
 	return nil
 }
 
-// run is a starting point method for executing the destroy command.
-func (r Destroy) run(ctx context.Context, out io.Writer) error {
-	if err := r.Driver.Destroy(ctx, out); err != nil {
+// run is a starting point method for executing the source command.
+func (r Source) run(ctx context.Context, out io.Writer) error {
+	if err := r.Driver.Source(ctx, out); err != nil {
 		return err
 	}
 	return nil

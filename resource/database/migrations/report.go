@@ -1,6 +1,8 @@
 package migrations
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/url"
@@ -10,6 +12,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 
+	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/internal/store"
 	"github.com/trivigy/migrate/v2/internal/store/model"
 	"github.com/trivigy/migrate/v2/require"
@@ -18,15 +21,16 @@ import (
 
 // Report represents the database migration report command object.
 type Report struct {
-	common
 	Migrations *types.Migrations `json:"migrations" yaml:"migrations"`
 	Driver     interface {
-		types.Sourced
+		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
-// ReportOptions is used for executing the Run() command.
-type ReportOptions struct{}
+var _ interface {
+	types.Resource
+	types.Command
+} = new(Report)
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
 func (r Report) NewCommand(name string) *cobra.Command {
@@ -36,11 +40,14 @@ func (r Report) NewCommand(name string) *cobra.Command {
 		Long:  "Prints which migrations were applied and when",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts := UpOptions{}
-			return r.Run(cmd.OutOrStdout(), opts)
+			return r.run(context.Background(), cmd.OutOrStdout())
 		},
-		SilenceUsage: true,
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
+
+	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
+	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -60,26 +67,26 @@ func (r Report) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r Report) validation(args []string) error {
+func (r Report) validation(cmd *cobra.Command, args []string) error {
 	if err := require.NoArgs(args); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Run is a starting point method for executing the up command.
-func (r Report) Run(out io.Writer, opts UpOptions) error {
-	source, err := r.Driver.Source()
+// run is a starting point method for executing the up command.
+func (r Report) run(ctx context.Context, out io.Writer) error {
+	source := bytes.NewBuffer(nil)
+	if err := r.Driver.Source(ctx, source); err != nil {
+		return err
+	}
+
+	u, err := url.Parse(source.String())
 	if err != nil {
 		return err
 	}
 
-	u, err := url.Parse(source)
-	if err != nil {
-		return err
-	}
-
-	db, err := store.Open(u.Scheme, source)
+	db, err := store.Open(u.Scheme, source.String())
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/trivigy/migrate/v2/internal/testutils"
@@ -35,7 +36,7 @@ func (r *MigrationsSuite) TestGenerateCommand() {
 			[]string{"example", "-d", dir},
 		},
 		{
-			true, "Error: directory \"./not-found\" not found\n",
+			true, "directory \"./not-found\" not found",
 			Generate{Migrations: r.Migrations},
 			// r.config,
 			bytes.NewBuffer(nil),
@@ -43,9 +44,14 @@ func (r *MigrationsSuite) TestGenerateCommand() {
 		},
 		{
 			true,
-			"Error: accepts 1 arg(s), received 0 for \"generate\"\n" +
+			"accepts 1 arg(s), received 0 for \"generate\"\n" +
 				"\n" +
-				"Usage:  generate NAME[:TAG] [flags]\n",
+				"Usage:\n" +
+				"  generate NAME[:TAG] [flags]\n" +
+				"\n" +
+				"Flags:\n" +
+				"  -d, --dir PATH   Specify directory PATH where to generate miration file. (default \".\")\n" +
+				"      --help       Show help information.\n",
 			Generate{Migrations: r.Migrations},
 			// r.config,
 			bytes.NewBuffer(nil),
@@ -53,9 +59,14 @@ func (r *MigrationsSuite) TestGenerateCommand() {
 		},
 		{
 			true,
-			"Error: invalid argument \"name:wrong\" for \"generate\"\n" +
+			"invalid argument \"name:wrong\" for \"generate\"\n" +
 				"\n" +
-				"Usage:  generate NAME[:TAG] [flags]\n",
+				"Usage:\n" +
+				"  generate NAME[:TAG] [flags]\n" +
+				"\n" +
+				"Flags:\n" +
+				"  -d, --dir PATH   Specify directory PATH where to generate miration file. (default \".\")\n" +
+				"      --help       Show help information.\n",
 			Generate{Migrations: r.Migrations},
 			// r.config,
 			bytes.NewBuffer(nil),
@@ -63,9 +74,14 @@ func (r *MigrationsSuite) TestGenerateCommand() {
 		},
 		{
 			true,
-			"Error: invalid argument \"name:0.0.0-alpha.2+001\" for \"generate\"\n" +
+			"invalid argument \"name:0.0.0-alpha.2+001\" for \"generate\"\n" +
 				"\n" +
-				"Usage:  generate NAME[:TAG] [flags]\n",
+				"Usage:\n" +
+				"  generate NAME[:TAG] [flags]\n" +
+				"\n" +
+				"Flags:\n" +
+				"  -d, --dir PATH   Specify directory PATH where to generate miration file. (default \".\")\n" +
+				"      --help       Show help information.\n",
 			Generate{Migrations: r.Migrations},
 			// r.config,
 			bytes.NewBuffer(nil),
@@ -73,17 +89,17 @@ func (r *MigrationsSuite) TestGenerateCommand() {
 		},
 	}
 
-	for i, testCase := range testCases {
-		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
+	for i, tc := range testCases {
+		failMsg := fmt.Sprintf("test: %d %v", i, spew.Sprint(tc))
 		runner := func() {
-			err := testCase.cmd.Execute("generate", testCase.buffer, testCase.args)
+			err := tc.cmd.Execute("generate", tc.buffer, tc.args)
 			if err != nil {
-				panic(testCase.buffer.String())
+				panic(err.Error())
 			}
 
 			empty, err := testutils.IsDirEmpty(dir)
 			if err != nil {
-				panic(err)
+				panic(err.Error())
 			}
 
 			if empty {
@@ -91,8 +107,8 @@ func (r *MigrationsSuite) TestGenerateCommand() {
 			}
 		}
 
-		if testCase.shouldFail {
-			assert.PanicsWithValue(r.T(), testCase.onFail, runner, failMsg)
+		if tc.shouldFail {
+			assert.PanicsWithValue(r.T(), tc.onFail, runner, failMsg)
 		} else {
 			assert.NotPanics(r.T(), runner, failMsg)
 		}

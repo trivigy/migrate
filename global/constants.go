@@ -15,5 +15,17 @@ const (
 
 const (
 	// DefaultEnvironment defines the name of a default environment.
-	DefaultEnvironment = "default"
+	DefaultEnvironment = "development"
+
+	// DefaultUsageTemplate defines the default Usage template used across
+	// builtin commands.
+	DefaultUsageTemplate = `Usage:
+  {{.UseLine}}{{if .HasAvailableSubCommands}}
+
+Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}
+`
 )

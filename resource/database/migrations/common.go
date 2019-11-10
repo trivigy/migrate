@@ -10,12 +10,9 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-// common defines some shared methods used by database commands.
-type common struct{}
-
 // GenerateMigrationPlan creates a migration plan based on difference with the
 // current state recorded on the database and direction.
-func (r common) GenerateMigrationPlan(
+func GenerateMigrationPlan(
 	db *store.Context,
 	direction types.Direction,
 	migrations *types.Migrations,

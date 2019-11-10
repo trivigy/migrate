@@ -1,6 +1,8 @@
 package migrations
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/url"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/internal/store"
 	"github.com/trivigy/migrate/v2/internal/store/model"
 	"github.com/trivigy/migrate/v2/require"
@@ -17,18 +20,22 @@ import (
 
 // Up represents the database up command object.
 type Up struct {
-	common
 	Migrations *types.Migrations `json:"migrations" yaml:"migrations"`
 	Driver     interface {
-		types.Sourced
+		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
-// UpOptions is used for executing the Run() command.
+// UpOptions is used for executing the run() command.
 type UpOptions struct {
 	Limit  int  `json:"limit" yaml:"limit"`
 	DryRun bool `json:"dryRun" yaml:"dryRun"`
 }
+
+var _ interface {
+	types.Resource
+	types.Command
+} = new(Up)
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
 func (r Up) NewCommand(name string) *cobra.Command {
@@ -49,10 +56,14 @@ func (r Up) NewCommand(name string) *cobra.Command {
 			}
 
 			opts := UpOptions{Limit: limit, DryRun: dryRun}
-			return r.Run(cmd.OutOrStdout(), opts)
+			return r.run(context.Background(), cmd.OutOrStdout(), opts)
 		},
-		SilenceUsage: true,
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
+
+	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
+	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -80,32 +91,32 @@ func (r Up) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r *Up) validation(args []string) error {
+func (r Up) validation(cmd *cobra.Command, args []string) error {
 	if err := require.NoArgs(args); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Run is a starting point method for executing the up command.
-func (r Up) Run(out io.Writer, opts UpOptions) error {
+// run is a starting point method for executing the up command.
+func (r Up) run(ctx context.Context, out io.Writer, opts UpOptions) error {
 	sort.Sort(*r.Migrations)
-	source, err := r.Driver.Source()
+	source := bytes.NewBuffer(nil)
+	if err := r.Driver.Source(ctx, source); err != nil {
+		return err
+	}
+
+	u, err := url.Parse(source.String())
 	if err != nil {
 		return err
 	}
 
-	u, err := url.Parse(source)
+	db, err := store.Open(u.Scheme, source.String())
 	if err != nil {
 		return err
 	}
 
-	db, err := store.Open(u.Scheme, source)
-	if err != nil {
-		return err
-	}
-
-	migrationPlan, err := r.GenerateMigrationPlan(db, types.DirectionUp, r.Migrations)
+	migrationPlan, err := GenerateMigrationPlan(db, types.DirectionUp, r.Migrations)
 	if err != nil {
 		return err
 	}

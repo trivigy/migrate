@@ -12,18 +12,20 @@ import (
 
 // History represents the cluster release history command object.
 type History struct {
-	common
-	Namespace string          `json:"namespace" yaml:"namespace"`
+	Namespace *string         `json:"namespace" yaml:"namespace"`
 	Releases  *types.Releases `json:"releases" yaml:"releases"`
 	Driver    interface {
-		types.KubeConfiged
+		types.Sourcer
 	} `json:"driver" yaml:"driver"`
 }
 
-// HistoryOptions is used for executing the Run() command.
-type HistoryOptions struct {
-	Env string `json:"env" yaml:"env"`
-}
+// HistoryOptions is used for executing the run() command.
+type HistoryOptions struct{}
+
+var _ interface {
+	types.Resource
+	types.Command
+} = new(History)
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
 func (r History) NewCommand(name string) *cobra.Command {
@@ -33,16 +35,15 @@ func (r History) NewCommand(name string) *cobra.Command {
 		Long:  "Prints revisions history of deployed releases",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			env, err := cmd.Flags().GetString("env")
-			if err != nil {
-				return err
-			}
-
-			opts := HistoryOptions{Env: env}
-			return r.Run(cmd.OutOrStdout(), opts)
+			opts := HistoryOptions{}
+			return r.run(cmd.OutOrStdout(), opts)
 		},
-		SilenceUsage: true,
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
+
+	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
+	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -62,15 +63,15 @@ func (r History) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r History) validation(args []string) error {
+func (r History) validation(cmd *cobra.Command, args []string) error {
 	if err := require.NoArgs(args); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Run is a starting point method for executing the cluster release history
+// run is a starting point method for executing the cluster release history
 // command.
-func (r History) Run(out io.Writer, opts HistoryOptions) error {
+func (r History) run(out io.Writer, opts HistoryOptions) error {
 	return nil
 }

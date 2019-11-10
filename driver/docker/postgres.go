@@ -8,7 +8,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	dtypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
@@ -18,23 +18,29 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/trivigy/migrate/v2/internal/retry"
-	mg8types "github.com/trivigy/migrate/v2/types"
+	"github.com/trivigy/migrate/v2/types"
 )
 
 // Postgres represents a driver for a docker based postgres database.
 type Postgres struct {
-	Name         string
-	Version      string
-	Password     string
-	User         string
-	DBName       string
-	InitDBArgs   string
-	InitDBWalDir string
-	PGData       string
+	Name         string `json:"name" yaml:"name"`
+	Version      string `json:"version" yaml:"version"`
+	Password     string `json:"password" yaml:"password"`
+	User         string `json:"user" yaml:"user"`
+	DBName       string `json:"dbName" yaml:"dbName"`
+	InitDBArgs   string `json:"initDBArgs" yaml:"initDBArgs"`
+	InitDBWalDir string `json:"initDBWalDir" yaml:"initDBWalDir"`
+	PGData       string `json:"pgData" yaml:"pgData"`
 }
 
+var _ interface {
+	types.Creator
+	types.Destroyer
+	types.Sourcer
+} = new(Postgres)
+
 // Create executes the resource creation process.
-func (r Postgres) Create(out io.Writer) error {
+func (r Postgres) Create(ctx context.Context, out io.Writer) error {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithVersion("1.38"),
@@ -44,10 +50,9 @@ func (r Postgres) Create(out io.Writer) error {
 	}
 	defer docker.Close()
 
-	ctx := context.Background()
 	filter := filters.NewArgs()
 	filter.Add("name", r.Name)
-	listOpts := types.ContainerListOptions{Filters: filter}
+	listOpts := dtypes.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
 		return err
@@ -57,9 +62,8 @@ func (r Postgres) Create(out io.Writer) error {
 		return nil
 	}
 
-	ctx = context.Background()
 	refStr := "postgres:" + r.Version
-	pullOpts := types.ImagePullOptions{}
+	pullOpts := dtypes.ImagePullOptions{}
 	reader, err := docker.ImagePull(ctx, refStr, pullOpts)
 	if err != nil {
 		return err
@@ -69,7 +73,6 @@ func (r Postgres) Create(out io.Writer) error {
 		return err
 	}
 
-	ctx = context.Background()
 	envVars := make([]string, 0)
 	if r.Password != "" {
 		envVars = append(envVars, "POSTGRES_PASSWORD="+r.Password)
@@ -99,20 +102,18 @@ func (r Postgres) Create(out io.Writer) error {
 		return err
 	}
 
-	ctx = context.Background()
-	startOpts := types.ContainerStartOptions{}
+	startOpts := dtypes.ContainerStartOptions{}
 	if err := docker.ContainerStart(ctx, resp.ID, startOpts); err != nil {
 		return err
 	}
 
-	ctx = context.Background()
 	info, err := docker.ContainerInspect(ctx, resp.ID)
 	if err != nil {
 		return err
 	}
 
 	address := info.NetworkSettings.IPAddress
-	url := mg8types.PsqlDSN{Host: address}
+	url := types.PsqlDSN{Host: address}
 	if r.User != "" {
 		url.User = r.User
 	}
@@ -127,7 +128,7 @@ func (r Postgres) Create(out io.Writer) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	if err := retry.Do(ctx, 1*time.Second, func() (bool, error) {
@@ -147,7 +148,7 @@ func (r Postgres) Create(out io.Writer) error {
 }
 
 // Destroy executes the resource destruction process.
-func (r Postgres) Destroy(out io.Writer) error {
+func (r Postgres) Destroy(ctx context.Context, out io.Writer) error {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithVersion("1.38"),
@@ -157,10 +158,9 @@ func (r Postgres) Destroy(out io.Writer) error {
 	}
 	defer docker.Close()
 
-	ctx := context.Background()
 	filter := filters.NewArgs()
 	filter.Add("name", r.Name)
-	listOpts := types.ContainerListOptions{Filters: filter}
+	listOpts := dtypes.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
 		return err
@@ -170,8 +170,7 @@ func (r Postgres) Destroy(out io.Writer) error {
 		return nil
 	}
 
-	ctx = context.Background()
-	logsOpts := types.ContainerLogsOptions{
+	logsOpts := dtypes.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 	}
@@ -184,7 +183,6 @@ func (r Postgres) Destroy(out io.Writer) error {
 		return err
 	}
 
-	ctx = context.Background()
 	if err := docker.ContainerKill(ctx, containers[0].ID, "KILL"); err != nil {
 		return err
 	}
@@ -192,37 +190,35 @@ func (r Postgres) Destroy(out io.Writer) error {
 }
 
 // Source returns the data source name for the driver.
-func (r Postgres) Source() (string, error) {
+func (r Postgres) Source(ctx context.Context, out io.Writer) error {
 	docker, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithVersion("1.38"),
 	)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer docker.Close()
 
-	ctx := context.Background()
 	filter := filters.NewArgs()
 	filter.Add("name", r.Name)
-	listOpts := types.ContainerListOptions{Filters: filter}
+	listOpts := dtypes.ContainerListOptions{Filters: filter}
 	containers, err := docker.ContainerList(ctx, listOpts)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	if len(containers) == 0 {
-		return "", fmt.Errorf("container %q not found", r.Name)
+		return fmt.Errorf("container %q not found", r.Name)
 	}
 
-	ctx = context.Background()
 	info, err := docker.ContainerInspect(ctx, containers[0].ID)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	address := info.NetworkSettings.IPAddress
-	url := mg8types.PsqlDSN{Host: address}
+	url := types.PsqlDSN{Host: address}
 	if r.Password != "" {
 		url.Password = r.Password
 	}
@@ -236,5 +232,9 @@ func (r Postgres) Source() (string, error) {
 	} else {
 		url.DBName = url.User
 	}
-	return url.Source(), nil
+
+	if _, err := out.Write([]byte(url.Source())); err != nil {
+		return err
+	}
+	return nil
 }

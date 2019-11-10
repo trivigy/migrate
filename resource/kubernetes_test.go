@@ -25,6 +25,25 @@ func (r *ClusterSuite) TestClusterCommand() {
 		output     string
 	}{
 		{
+			true,
+			"accepts 1 arg(s), received 0 for \"kubernetes\"\n" +
+				"\n" +
+				"Usage:\n" +
+				"  kubernetes COMMAND [flags]\n" +
+				"\n" +
+				"Available Commands:\n" +
+				"  create      Constructs and starts a new instance of this resource.\n" +
+				"  destroy     Stops and removes running instance of this resource.\n" +
+				"  releases    Manages the lifecycle of a kubernetes release.\n" +
+				"  source      Prints the data source name as a connection string.\n" +
+				"\n" +
+				"Flags:\n      --help   Show help information.\n",
+			Kubernetes{},
+			bytes.NewBuffer(nil),
+			[]string{},
+			"",
+		},
+		{
 			false, "",
 			Kubernetes{},
 			bytes.NewBuffer(nil),
@@ -32,17 +51,16 @@ func (r *ClusterSuite) TestClusterCommand() {
 			"Kubernetes cluster release and deployment controller\n" +
 				"\n" +
 				"Usage:\n" +
-				"  kubernetes [command]\n" +
+				"  kubernetes COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
 				"  create      Constructs and starts a new instance of this resource.\n" +
 				"  destroy     Stops and removes running instance of this resource.\n" +
 				"  releases    Manages the lifecycle of a kubernetes release.\n" +
+				"  source      Prints the data source name as a connection string.\n" +
 				"\n" +
 				"Flags:\n" +
-				"      --help   Show help information.\n" +
-				"\n" +
-				"Use \"kubernetes [command] --help\" for more information about a command.\n",
+				"      --help   Show help information.\n",
 		},
 	}
 

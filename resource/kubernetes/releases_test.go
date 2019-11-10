@@ -25,14 +25,11 @@ func (r *ReleaseSuite) TestReleaseCommand() {
 		output     string
 	}{
 		{
-			false, "",
-			Releases{},
-			bytes.NewBuffer(nil),
-			[]string{"--help"},
-			"Manages the lifecycle of a kubernetes release\n" +
+			true,
+			"accepts 1 arg(s), received 0 for \"releases\"\n" +
 				"\n" +
 				"Usage:\n" +
-				"  releases [command]\n" +
+				"  releases COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
 				"  describe    Prints release resources detail information.\n" +
@@ -44,9 +41,33 @@ func (r *ReleaseSuite) TestReleaseCommand() {
 				"  upgrade     Redeploy a modified release and track revision version.\n" +
 				"\n" +
 				"Flags:\n" +
-				"      --help   Show help information.\n" +
+				"      --help   Show help information.\n",
+			Releases{},
+			bytes.NewBuffer(nil),
+			[]string{},
+			"",
+		},
+		{
+			false, "",
+			Releases{},
+			bytes.NewBuffer(nil),
+			[]string{"--help"},
+			"Manages the lifecycle of a kubernetes release\n" +
 				"\n" +
-				"Use \"releases [command] --help\" for more information about a command.\n",
+				"Usage:\n" +
+				"  releases COMMAND [flags]\n" +
+				"\n" +
+				"Available Commands:\n" +
+				"  describe    Prints release resources detail information.\n" +
+				"  generate    Adds a new release template.\n" +
+				"  history     Prints revisions history of deployed releases.\n" +
+				"  install     Deploys release resources on running cluster.\n" +
+				"  list        List registered releases with states information.\n" +
+				"  uninstall   Stops a running release and removes the resources.\n" +
+				"  upgrade     Redeploy a modified release and track revision version.\n" +
+				"\n" +
+				"Flags:\n" +
+				"      --help   Show help information.\n",
 		},
 	}
 

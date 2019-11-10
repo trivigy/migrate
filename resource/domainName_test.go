@@ -11,11 +11,11 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-type DatabaseSuite struct {
+type DNSSuite struct {
 	suite.Suite
 }
 
-func (r *DatabaseSuite) TestDatabaseCommand() {
+func (r *DNSSuite) TestDNSCommand() {
 	testCases := []struct {
 		shouldFail bool
 		onFail     string
@@ -26,39 +26,35 @@ func (r *DatabaseSuite) TestDatabaseCommand() {
 	}{
 		{
 			true,
-			"accepts 1 arg(s), received 0 for \"database\"\n" +
+			"accepts 1 arg(s), received 0 for \"domainName\"\n" +
 				"\n" +
 				"Usage:\n" +
-				"  database COMMAND [flags]\n" +
+				"  domainName COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
 				"  create      Constructs and starts a new instance of this resource.\n" +
 				"  destroy     Stops and removes running instance of this resource.\n" +
-				"  migrations  Manages the lifecycle of a database migration.\n" +
-				"  source      Prints the data source name as a connection string.\n" +
 				"\n" +
 				"Flags:\n" +
 				"      --help   Show help information.\n",
-			Database{},
+			DomainName{},
 			bytes.NewBuffer(nil),
 			[]string{},
 			"",
 		},
 		{
 			false, "",
-			Database{},
+			DomainName{},
 			bytes.NewBuffer(nil),
 			[]string{"--help"},
-			"SQL database deployment and migrations management tool\n" +
+			"Controls instance of domain name service resource\n" +
 				"\n" +
 				"Usage:\n" +
-				"  database COMMAND [flags]\n" +
+				"  domainName COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
 				"  create      Constructs and starts a new instance of this resource.\n" +
 				"  destroy     Stops and removes running instance of this resource.\n" +
-				"  migrations  Manages the lifecycle of a database migration.\n" +
-				"  source      Prints the data source name as a connection string.\n" +
 				"\n" +
 				"Flags:\n" +
 				"      --help   Show help information.\n",
@@ -68,7 +64,7 @@ func (r *DatabaseSuite) TestDatabaseCommand() {
 	for i, testCase := range testCases {
 		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
 		runner := func() {
-			err := testCase.cmd.Execute("database", testCase.buffer, testCase.args)
+			err := testCase.cmd.Execute("domainName", testCase.buffer, testCase.args)
 			if err != nil {
 				panic(err.Error())
 			}
@@ -87,6 +83,6 @@ func (r *DatabaseSuite) TestDatabaseCommand() {
 	}
 }
 
-func TestDatabaseSuite(t *testing.T) {
-	suite.Run(t, new(DatabaseSuite))
+func TestDNSSuite(t *testing.T) {
+	suite.Run(t, new(DNSSuite))
 }

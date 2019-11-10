@@ -25,14 +25,11 @@ func (r *MigrationSuite) TestDatabaseCommand() {
 		output     string
 	}{
 		{
-			false, "",
-			Migrations{},
-			bytes.NewBuffer(nil),
-			[]string{"--help"},
-			"Manages the lifecycle of a database migration.\n" +
+			true,
+			"accepts 1 arg(s), received 0 for \"migrations\"\n" +
 				"\n" +
 				"Usage:\n" +
-				"  migrations [command]\n" +
+				"  migrations COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
 				"  down        Rolls back to the previously applied migrations.\n" +
@@ -41,9 +38,30 @@ func (r *MigrationSuite) TestDatabaseCommand() {
 				"  up          Executes the next queued migration.\n" +
 				"\n" +
 				"Flags:\n" +
-				"      --help   Show help information.\n" +
+				"      --help   Show help information.\n",
+			Migrations{},
+			bytes.NewBuffer(nil),
+			[]string{},
+			"",
+		},
+		{
+			false, "",
+			Migrations{},
+			bytes.NewBuffer(nil),
+			[]string{"--help"},
+			"Manages the lifecycle of a database migration\n" +
 				"\n" +
-				"Use \"migrations [command] --help\" for more information about a command.\n",
+				"Usage:\n" +
+				"  migrations COMMAND [flags]\n" +
+				"\n" +
+				"Available Commands:\n" +
+				"  down        Rolls back to the previously applied migrations.\n" +
+				"  generate    Adds a new blank migration with increasing version.\n" +
+				"  report      Prints which migrations were applied and when.\n" +
+				"  up          Executes the next queued migration.\n" +
+				"\n" +
+				"Flags:\n" +
+				"      --help   Show help information.\n",
 		},
 	}
 

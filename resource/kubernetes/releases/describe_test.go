@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/trivigy/migrate/v2/types"
@@ -27,25 +28,25 @@ func (r *ReleasesSuite) TestDescribeCommand() {
 			Describe{Namespace: r.Namespace, Releases: r.Releases, Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{"create-unittest-cluster:0.0.1", "Service", "metadata.name"},
-			"locker",
+			"unittest",
 		},
 	}
 
-	for i, testCase := range testCases {
-		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
+	for i, tc := range testCases {
+		failMsg := fmt.Sprintf("test: %d %v", i, spew.Sprint(tc))
 		runner := func() {
-			err := testCase.cmd.Execute("describe", testCase.buffer, testCase.args)
+			err := tc.cmd.Execute("describe", tc.buffer, tc.args)
 			if err != nil {
-				panic(testCase.buffer.String())
+				panic(err.Error())
 			}
 
-			if testCase.output != strings.TrimSpace(testCase.buffer.String()) {
-				panic(testCase.buffer.String())
+			if tc.output != strings.TrimSpace(tc.buffer.String()) {
+				panic(tc.buffer.String())
 			}
 		}
 
-		if testCase.shouldFail {
-			assert.PanicsWithValue(r.T(), testCase.onFail, runner, failMsg)
+		if tc.shouldFail {
+			assert.PanicsWithValue(r.T(), tc.onFail, runner, failMsg)
 		} else {
 			assert.NotPanics(r.T(), runner, failMsg)
 		}
