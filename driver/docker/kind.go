@@ -11,11 +11,11 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/kind/cmd/kind"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
 	logutil "sigs.k8s.io/kind/pkg/log"
+	"sigs.k8s.io/yaml"
 
 	"github.com/trivigy/migrate/v2/types"
 )
@@ -142,8 +142,7 @@ func (r Kind) Destroy(ctx context.Context, out io.Writer) error {
 	if err := r.Execute(out, []string{
 		"delete", "cluster",
 		"--name", r.Name,
-	}); err != nil &&
-		!strings.HasPrefix(err.Error(), "unknown cluster") {
+	}); err != nil && !strings.HasPrefix(err.Error(), "unknown cluster") {
 		return err
 	}
 	return nil

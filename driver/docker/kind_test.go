@@ -60,9 +60,18 @@ func (r *KindSuite) SetupSuite() {
 	assert.Nil(r.T(), err)
 
 	r.Namespace = "unittest"
-	r.Driver = Kind{
+	r.Driver = &Kind{
 		Images: []string{tagged1, tagged2},
 		Name:   strings.ToLower(randomdata.SillyName()),
+		Config: &v1alpha3.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Cluster",
+				APIVersion: "kind.sigs.k8s.io/v1alpha3",
+			},
+			Nodes: []v1alpha3.Node{
+				{Role: "control-plane"},
+			},
+		},
 	}
 }
 
