@@ -74,8 +74,20 @@ func (r CloudSQL) EnsureInstance(ctx context.Context, out io.Writer, ts oauth2.T
 		return err
 	}
 
-	_, err = service.Instances.Get(r.ProjectID, r.Name).Do()
+	inst, err := service.Instances.Get(r.ProjectID, r.Name).Do()
 	if err == nil {
+		inst.Settings.BackupConfiguration = &sqladmin.BackupConfiguration{
+			Enabled:   true,
+			StartTime: "08:00",
+		}
+		op, err := service.Instances.Patch(r.ProjectID, r.Name, inst).Do()
+		if err != nil {
+			return err
+		}
+
+		if err := r.WaitForOp(ctx, service, op.Name); err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -90,6 +102,10 @@ func (r CloudSQL) EnsureInstance(ctx context.Context, out io.Writer, ts oauth2.T
 					Tier: "db-custom-1-3840",
 					LocationPreference: &sqladmin.LocationPreference{
 						Zone: r.Location,
+					},
+					BackupConfiguration: &sqladmin.BackupConfiguration{
+						Enabled:   true,
+						StartTime: "08:00",
 					},
 				},
 			}).Do()
