@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/trivigy/migrate/v2/driver/docker"
+	"github.com/trivigy/migrate/v2/drivers/docker"
 	"github.com/trivigy/migrate/v2/types"
 )
 
