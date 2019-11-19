@@ -29,13 +29,13 @@ func (r *ReleasesSuite) TestGenerateCommand() {
 	}{
 		{
 			false, "",
-			Generate{Releases: r.Releases},
+			Generate{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{"example", "-d", dir},
 		},
 		{
 			true, "directory \"./not-found\" not found",
-			Generate{Releases: r.Releases},
+			Generate{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{"example", "-d", "./not-found"},
 		},
@@ -49,7 +49,7 @@ func (r *ReleasesSuite) TestGenerateCommand() {
 				"Flags:\n" +
 				"  -d, --dir PATH   Specify directory PATH where to generate miration file. (default \".\")\n" +
 				"      --help       Show help information.\n",
-			Generate{Releases: r.Releases},
+			Generate{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{},
 		},
@@ -63,7 +63,7 @@ func (r *ReleasesSuite) TestGenerateCommand() {
 				"Flags:\n" +
 				"  -d, --dir PATH   Specify directory PATH where to generate miration file. (default \".\")\n" +
 				"      --help       Show help information.\n",
-			Generate{Releases: r.Releases},
+			Generate{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{"name:wrong"},
 		},
@@ -77,7 +77,7 @@ func (r *ReleasesSuite) TestGenerateCommand() {
 				"Flags:\n" +
 				"  -d, --dir PATH   Specify directory PATH where to generate miration file. (default \".\")\n" +
 				"      --help       Show help information.\n",
-			Generate{Releases: r.Releases},
+			Generate{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{"name:0.0.0-alpha.2+001"},
 		},

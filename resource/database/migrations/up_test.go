@@ -21,17 +21,17 @@ func (r *MigrationsSuite) TestUpCommand() {
 	}{
 		{
 			false, "",
-			Up{Migrations: r.Migrations, Driver: r.Driver},
+			Up{Driver: r.Driver},
 			bytes.NewBuffer(nil),
-			[]string{"--dry-run"},
+			[]string{"--try"},
 			"==> migration \"0.0.1_create-unittest-table\" (up)\n" +
 				"CREATE TABLE unittests (value text);\n",
 		},
 		{
 			false, "",
-			Up{Migrations: r.Migrations, Driver: r.Driver},
+			Up{Driver: r.Driver},
 			bytes.NewBuffer(nil),
-			[]string{"-l", "0", "--dry-run"},
+			[]string{"-l", "0", "--try"},
 			"==> migration \"0.0.1_create-unittest-table\" (up)\n" +
 				"CREATE TABLE unittests (value text);\n" +
 				"==> migration \"0.0.2_seed-dummy-data\" (up)\n" +
@@ -41,14 +41,14 @@ func (r *MigrationsSuite) TestUpCommand() {
 		},
 		{
 			false, "",
-			Up{Migrations: r.Migrations, Driver: r.Driver},
+			Up{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{"-l", "1"},
 			"migration \"0.0.1_create-unittest-table\" successfully applied (up)\n",
 		},
 		{
 			false, "",
-			Up{Migrations: r.Migrations, Driver: r.Driver},
+			Up{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{"-l", "0"},
 			"migration \"0.0.2_seed-dummy-data\" successfully applied (up)\n" +

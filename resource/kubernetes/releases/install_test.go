@@ -21,7 +21,7 @@ func (r *ReleasesSuite) TestInstallCommand() {
 	}{
 		{
 			false, "",
-			Install{Namespace: r.Namespace, Releases: r.Releases, Driver: r.Driver},
+			Install{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{},
 			"",

@@ -1,6 +1,7 @@
 package releases
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/spf13/cobra"
 
+	"github.com/trivigy/migrate/v2/driver"
 	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
 	"github.com/trivigy/migrate/v2/types"
@@ -42,7 +44,10 @@ func init() {
 // Generate represents the generate command which allows for generating new
 // templates of the cluster migrations file.
 type Generate struct {
-	*types.Releases
+	Driver interface {
+		driver.WithReleases
+		driver.WithSource
+	} `json:"driver" yaml:"driver"`
 }
 
 // GenerateOptions is used for executing the run() method.
@@ -58,7 +63,7 @@ var _ interface {
 } = new(Generate)
 
 // NewCommand returns a new cobra.Command generate command object.
-func (r Generate) NewCommand(name string) *cobra.Command {
+func (r Generate) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name + " NAME[:TAG]",
 		Short: "Adds a new release template.",
@@ -96,7 +101,9 @@ func (r Generate) NewCommand(name string) *cobra.Command {
 
 // Execute runs the command.
 func (r Generate) Execute(name string, out io.Writer, args []string) error {
-	cmd := r.NewCommand(name)
+	wrap := types.Executor{Name: name, Command: r}
+	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
+	cmd := r.NewCommand(ctx, name)
 	cmd.SetOut(out)
 	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
@@ -138,9 +145,9 @@ func (r Generate) run(out io.Writer, opts GenerateOptions) error {
 		return fmt.Errorf("directory %q not found", opts.Dir)
 	}
 
-	sort.Sort(*r.Releases)
+	sort.Sort(*r.Driver.Releases())
 	tags := semver.Versions{semver.Version{}}
-	for _, rgMig := range *r.Releases {
+	for _, rgMig := range *r.Driver.Releases() {
 		tags = append(tags, rgMig.Version)
 	}
 

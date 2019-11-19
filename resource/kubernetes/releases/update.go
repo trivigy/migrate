@@ -26,8 +26,8 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-// Uninstall represents the cluster release uninstall command object.
-type Uninstall struct {
+// Update represents the cluster release upgrade command object.
+type Update struct {
 	Driver interface {
 		driver.WithNamespace
 		driver.WithReleases
@@ -35,8 +35,8 @@ type Uninstall struct {
 	} `json:"driver" yaml:"driver"`
 }
 
-// uninstallOptions is used for executing the run() command.
-type uninstallOptions struct {
+// updateOptions is used for executing the run() command.
+type updateOptions struct {
 	Name     string         `json:"name" yaml:"name"`
 	Version  semver.Version `json:"version" yaml:"version"`
 	Resource string         `json:"resource" yaml:"resource"`
@@ -45,14 +45,14 @@ type uninstallOptions struct {
 var _ interface {
 	types.Resource
 	types.Command
-} = new(Uninstall)
+} = new(Update)
 
-// NewCommand creates a new cobra.Command, configures it, and returns it.
-func (r Uninstall) NewCommand(ctx context.Context, name string) *cobra.Command {
+// NewCommand creates a new cobra.Command, configures it and returns it.
+func (r Update) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   name[strings.LastIndex(name, ".")+1:] + " [NAME[:VERSION]] [RESOURCE]",
-		Short: "Stops a running release and removes the resources.",
-		Long:  "Stops a running release and removes the resources",
+		Short: "Redeploy a modified release and track revision version.",
+		Long:  "Redeploy a modified release and track revision version",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if patches, ok := r.Driver.(driver.WithPatches); ok {
@@ -98,7 +98,7 @@ func (r Uninstall) NewCommand(ctx context.Context, name string) *cobra.Command {
 				resource = args[1]
 			}
 
-			opts := uninstallOptions{
+			opts := updateOptions{
 				Name:     name,
 				Version:  version,
 				Resource: resource,
@@ -124,7 +124,7 @@ func (r Uninstall) NewCommand(ctx context.Context, name string) *cobra.Command {
 }
 
 // Execute runs the command.
-func (r Uninstall) Execute(name string, out io.Writer, args []string) error {
+func (r Update) Execute(name string, out io.Writer, args []string) error {
 	wrap := types.Executor{Name: name, Command: r}
 	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
 	cmd := r.NewCommand(ctx, name)
@@ -137,16 +137,15 @@ func (r Uninstall) Execute(name string, out io.Writer, args []string) error {
 }
 
 // validation represents a sequence of positional argument validation steps.
-func (r Uninstall) validation(cmd *cobra.Command, args []string) error {
+func (r Update) validation(cmd *cobra.Command, args []string) error {
 	if err := require.MaxArgs(args, 2); err != nil {
 		return err
 	}
 	return nil
 }
 
-// run is a starting point method for executing the cluster release uninstall
-// command.
-func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions) error {
+// run is a starting point method for executing the create command.
+func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) error {
 	kubectl, err := GetK8sClientset(ctx, r.Driver, *r.Driver.Namespace())
 	if err != nil {
 		return err
@@ -179,15 +178,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.CoreV1().
+				_, err = kubectl.CoreV1().
 					Namespaces().
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1core.Pod:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					Pods(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Pods(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -195,15 +195,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.CoreV1().
-					Pods(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.CoreV1().
+					Pods(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1core.ServiceAccount:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					ServiceAccounts(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					ServiceAccounts(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -211,15 +212,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.CoreV1().
-					ServiceAccounts(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.CoreV1().
+					ServiceAccounts(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1core.ConfigMap:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					ConfigMaps(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					ConfigMaps(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -227,15 +229,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.CoreV1().
-					ConfigMaps(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.CoreV1().
+					ConfigMaps(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1core.Endpoints:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					Endpoints(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					ConfigMaps(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -243,15 +246,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.CoreV1().
-					Endpoints(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.CoreV1().
+					Endpoints(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1core.Service:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					Services(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Services(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -259,15 +263,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.CoreV1().
-					Services(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.CoreV1().
+					Services(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1core.Secret:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					Secrets(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Secrets(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -275,15 +280,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.CoreV1().
-					Secrets(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.CoreV1().
+					Secrets(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1rbac.Role:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.RbacV1().
-					Roles(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Roles(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -291,15 +297,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.RbacV1().
-					Roles(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.RbacV1().
+					Roles(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1rbac.RoleBinding:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.RbacV1().
-					RoleBindings(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					RoleBindings(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -307,9 +314,9 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.RbacV1().
-					RoleBindings(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.RbacV1().
+					RoleBindings(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}
@@ -323,9 +330,9 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.RbacV1().
+				_, err = kubectl.RbacV1().
 					ClusterRoles().
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+					Update(manifest)
 				if err != nil {
 					return err
 				}
@@ -339,9 +346,9 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.RbacV1().
+				_, err = kubectl.RbacV1().
 					ClusterRoleBindings().
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+					Update(manifest)
 				if err != nil {
 					return err
 				}
@@ -355,15 +362,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.PolicyV1beta1().
+				_, err = kubectl.PolicyV1beta1().
 					PodSecurityPolicies().
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1apps.DaemonSet:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.AppsV1().
-					DaemonSets(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					DaemonSets(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -371,15 +379,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.AppsV1().
-					DaemonSets(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.AppsV1().
+					DaemonSets(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1apps.Deployment:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.AppsV1().
-					Deployments(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Deployments(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -387,15 +396,16 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.AppsV1().
-					Deployments(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.AppsV1().
+					Deployments(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}
 			case *v1ext.Ingress:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.ExtensionsV1beta1().
-					Ingresses(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Ingresses(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
@@ -403,9 +413,9 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 					return err
 				}
 
-				err = kubectl.ExtensionsV1beta1().
-					Ingresses(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
-					Delete(manifest.Name, &v1meta.DeleteOptions{})
+				_, err = kubectl.ExtensionsV1beta1().
+					Ingresses(namespace).
+					Update(manifest)
 				if err != nil {
 					return err
 				}

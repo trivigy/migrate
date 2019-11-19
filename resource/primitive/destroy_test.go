@@ -39,13 +39,11 @@ func (r *DestroySuite) TestDestroyCommand() {
 			[]string{"--help"},
 			"Stops and removes running instance of this resource\n" +
 				"\n" +
-				"Usage:\n" +
-				"  destroy [flags]\n" +
+				"Usage:\n  destroy [flags]\n" +
 				"\n" +
 				"Flags:\n" +
-				"  -m, --merge PATH   Merges specified json PATH with configured parameters.\n" +
-				"      --dry-run      Simulate parameter merging without resource execution.\n" +
-				"      --help         Show help information.\n",
+				"  -t, --try    Simulates and prints resource execution parameters.\n" +
+				"      --help   Show help information.\n",
 		},
 	}
 

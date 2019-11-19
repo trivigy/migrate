@@ -8,6 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/trivigy/migrate/v2/resource/database"
+	"github.com/trivigy/migrate/v2/resource/database/migrations"
+	"github.com/trivigy/migrate/v2/resource/primitive"
 	"github.com/trivigy/migrate/v2/types"
 )
 
@@ -39,14 +42,34 @@ func (r *DatabaseSuite) TestDatabaseCommand() {
 				"\n" +
 				"Flags:\n" +
 				"      --help   Show help information.\n",
-			Database{},
+			Database{
+				"create":  primitive.Create{},
+				"destroy": primitive.Destroy{},
+				"source":  primitive.Source{},
+				"migrations": database.Migrations{
+					"generate": migrations.Generate{},
+					"up":       migrations.Up{},
+					"down":     migrations.Down{},
+					"report":   migrations.Report{},
+				},
+			},
 			bytes.NewBuffer(nil),
 			[]string{},
 			"",
 		},
 		{
 			false, "",
-			Database{},
+			Database{
+				"create":  primitive.Create{},
+				"destroy": primitive.Destroy{},
+				"source":  primitive.Source{},
+				"migrations": database.Migrations{
+					"generate": migrations.Generate{},
+					"up":       migrations.Up{},
+					"down":     migrations.Down{},
+					"report":   migrations.Report{},
+				},
+			},
 			bytes.NewBuffer(nil),
 			[]string{"--help"},
 			"SQL database deployment and migrations management tool\n" +

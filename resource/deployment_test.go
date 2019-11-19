@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/trivigy/migrate/v2/internal/testutils"
+	"github.com/trivigy/migrate/v2/resource/primitive"
 	"github.com/trivigy/migrate/v2/types"
 )
 
@@ -27,7 +28,10 @@ func (r *DeploymentSuite) TestDeploymentCommand() {
 	}{
 		{
 			true, "implement me",
-			Deployment{Driver: &testutils.Driver{}},
+			Deployment{
+				"create":  primitive.Create{Driver: &testutils.Driver{}},
+				"destroy": primitive.Destroy{Driver: &testutils.Driver{}},
+			},
 			bytes.NewBuffer(nil),
 			[]string{"create"},
 			"",
@@ -45,7 +49,10 @@ func (r *DeploymentSuite) TestDeploymentCommand() {
 				"\n" +
 				"Flags:\n" +
 				"      --help   Show help information.\n",
-			Deployment{Driver: &testutils.Driver{}},
+			Deployment{
+				"create":  primitive.Create{Driver: &testutils.Driver{}},
+				"destroy": primitive.Destroy{Driver: &testutils.Driver{}},
+			},
 			bytes.NewBuffer(nil),
 			[]string{},
 			"",

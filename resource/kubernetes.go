@@ -1,27 +1,19 @@
 package resource
 
 import (
+	"context"
 	"io"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
-	"github.com/trivigy/migrate/v2/resource/kubernetes"
-	"github.com/trivigy/migrate/v2/resource/primitive"
 	"github.com/trivigy/migrate/v2/types"
 )
 
 // Kubernetes represents a kubernetes root command.
-type Kubernetes struct {
-	Namespace *string         `json:"namespace" yaml:"namespace"`
-	Releases  *types.Releases `json:"releases" yaml:"releases"`
-	Driver    interface {
-		types.Creator
-		types.Destroyer
-		types.Sourcer
-	} `json:"driver" yaml:"driver"`
-}
+type Kubernetes map[string]types.Resource
 
 var _ interface {
 	types.Resource
@@ -29,9 +21,9 @@ var _ interface {
 } = new(Kubernetes)
 
 // NewCommand returns a new cobra.Command object.
-func (r Kubernetes) NewCommand(name string) *cobra.Command {
+func (r Kubernetes) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   name + " COMMAND",
+		Use:   name[strings.LastIndex(name, ".")+1:] + " COMMAND",
 		Short: "Kubernetes cluster release and deployment controller.",
 		Long:  "Kubernetes cluster release and deployment controller",
 		Args:  require.Args(r.validation),
@@ -44,22 +36,9 @@ func (r Kubernetes) NewCommand(name string) *cobra.Command {
 
 	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	cmd.AddCommand(
-		primitive.Create{
-			Driver: r.Driver,
-		}.NewCommand("create"),
-		primitive.Destroy{
-			Driver: r.Driver,
-		}.NewCommand("destroy"),
-		primitive.Source{
-			Driver: r.Driver,
-		}.NewCommand("source"),
-		kubernetes.Releases{
-			Namespace: r.Namespace,
-			Releases:  r.Releases,
-			Driver:    r.Driver,
-		}.NewCommand("releases"),
-	)
+	for key, resource := range r {
+		cmd.AddCommand(resource.NewCommand(ctx, name+"."+key))
+	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -68,11 +47,13 @@ func (r Kubernetes) NewCommand(name string) *cobra.Command {
 }
 
 // Execute runs the command.
-func (r Kubernetes) Execute(name string, output io.Writer, args []string) error {
-	main := r.NewCommand(name)
-	main.SetOut(output)
-	main.SetArgs(args)
-	if err := main.Execute(); err != nil {
+func (r Kubernetes) Execute(name string, out io.Writer, args []string) error {
+	wrap := types.Executor{Name: name, Command: r}
+	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
+	cmd := r.NewCommand(ctx, name)
+	cmd.SetOut(out)
+	cmd.SetArgs(args)
+	if err := cmd.Execute(); err != nil {
 		return err
 	}
 	return nil

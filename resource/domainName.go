@@ -1,23 +1,19 @@
 package resource
 
 import (
+	"context"
 	"io"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
-	"github.com/trivigy/migrate/v2/resource/primitive"
 	"github.com/trivigy/migrate/v2/types"
 )
 
 // DomainName represents a database root command.
-type DomainName struct {
-	Driver interface {
-		types.Creator
-		types.Destroyer
-	} `json:"driver" yaml:"driver"`
-}
+type DomainName map[string]types.Resource
 
 var _ interface {
 	types.Resource
@@ -25,9 +21,9 @@ var _ interface {
 } = new(DomainName)
 
 // NewCommand returns a new cobra.Command object.
-func (r DomainName) NewCommand(name string) *cobra.Command {
+func (r DomainName) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   name + " COMMAND",
+		Use:   name[strings.LastIndex(name, ".")+1:] + " COMMAND",
 		Short: "Controls instance of domain name service resource.",
 		Long:  "Controls instance of domain name service resource",
 		Args:  require.Args(r.validation),
@@ -40,14 +36,9 @@ func (r DomainName) NewCommand(name string) *cobra.Command {
 
 	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	cmd.AddCommand(
-		primitive.Create{
-			Driver: r.Driver,
-		}.NewCommand("create"),
-		primitive.Destroy{
-			Driver: r.Driver,
-		}.NewCommand("destroy"),
-	)
+	for key, resource := range r {
+		cmd.AddCommand(resource.NewCommand(ctx, name+"."+key))
+	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -57,10 +48,12 @@ func (r DomainName) NewCommand(name string) *cobra.Command {
 
 // Execute runs the command.
 func (r DomainName) Execute(name string, out io.Writer, args []string) error {
-	main := r.NewCommand(name)
-	main.SetOut(out)
-	main.SetArgs(args)
-	if err := main.Execute(); err != nil {
+	wrap := types.Executor{Name: name, Command: r}
+	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
+	cmd := r.NewCommand(ctx, name)
+	cmd.SetOut(out)
+	cmd.SetArgs(args)
+	if err := cmd.Execute(); err != nil {
 		return err
 	}
 	return nil

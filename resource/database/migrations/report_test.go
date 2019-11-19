@@ -21,7 +21,7 @@ func (r *MigrationsSuite) TestReportCommand() {
 	}{
 		{
 			false, "",
-			Report{Migrations: r.Migrations, Driver: r.Driver},
+			Report{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{},
 			"+-------+-----------------------+---------+\n" +

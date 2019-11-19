@@ -8,15 +8,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/trivigy/migrate/v2/resource/primitive"
 	"github.com/trivigy/migrate/v2/types"
 )
 
-type DNSSuite struct {
+type EnvironmentSuite struct {
 	suite.Suite
 }
 
-func (r *DNSSuite) TestDNSCommand() {
+func (r *EnvironmentSuite) TestEnvironmentCommand() {
 	testCases := []struct {
 		shouldFail bool
 		onFail     string
@@ -27,20 +26,22 @@ func (r *DNSSuite) TestDNSCommand() {
 	}{
 		{
 			true,
-			"accepts 1 arg(s), received 0 for \"domainName\"\n" +
+			"accepts 1 arg(s), received 0 for \"collection\"\n" +
 				"\n" +
 				"Usage:\n" +
-				"  domainName COMMAND [flags]\n" +
+				"  collection COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
-				"  create      Constructs and starts a new instance of this resource.\n" +
-				"  destroy     Stops and removes running instance of this resource.\n" +
+				"  database    SQL database deployment and migrations management tool.\n" +
+				"  domainName  Controls instance of domain name service resource.\n" +
+				"  kubernetes  Kubernetes cluster release and deployment controller.\n" +
 				"\n" +
 				"Flags:\n" +
 				"      --help   Show help information.\n",
-			DomainName{
-				"create":  primitive.Create{},
-				"destroy": primitive.Destroy{},
+			Collection{
+				"database":   Database{},
+				"kubernetes": Kubernetes{},
+				"domainName": DomainName{},
 			},
 			bytes.NewBuffer(nil),
 			[]string{},
@@ -48,20 +49,20 @@ func (r *DNSSuite) TestDNSCommand() {
 		},
 		{
 			false, "",
-			DomainName{
-				"create":  primitive.Create{},
-				"destroy": primitive.Destroy{},
+			Collection{
+				"database":   Database{},
+				"kubernetes": Kubernetes{},
+				"domainName": DomainName{},
 			},
 			bytes.NewBuffer(nil),
 			[]string{"--help"},
-			"Controls instance of domain name service resource\n" +
-				"\n" +
-				"Usage:\n" +
-				"  domainName COMMAND [flags]\n" +
+			"Usage:\n" +
+				"  collection COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
-				"  create      Constructs and starts a new instance of this resource.\n" +
-				"  destroy     Stops and removes running instance of this resource.\n" +
+				"  database    SQL database deployment and migrations management tool.\n" +
+				"  domainName  Controls instance of domain name service resource.\n" +
+				"  kubernetes  Kubernetes cluster release and deployment controller.\n" +
 				"\n" +
 				"Flags:\n" +
 				"      --help   Show help information.\n",
@@ -71,7 +72,7 @@ func (r *DNSSuite) TestDNSCommand() {
 	for i, testCase := range testCases {
 		failMsg := fmt.Sprintf("testCase: %d %v", i, testCase)
 		runner := func() {
-			err := testCase.cmd.Execute("domainName", testCase.buffer, testCase.args)
+			err := testCase.cmd.Execute("collection", testCase.buffer, testCase.args)
 			if err != nil {
 				panic(err.Error())
 			}
@@ -90,6 +91,6 @@ func (r *DNSSuite) TestDNSCommand() {
 	}
 }
 
-func TestDNSSuite(t *testing.T) {
-	suite.Run(t, new(DNSSuite))
+func TestEnvironmentSuite(t *testing.T) {
+	suite.Run(t, new(EnvironmentSuite))
 }

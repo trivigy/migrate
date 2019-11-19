@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/trivigy/migrate/v2/resource/database/migrations"
 	"github.com/trivigy/migrate/v2/types"
 )
 
@@ -39,14 +40,24 @@ func (r *MigrationSuite) TestDatabaseCommand() {
 				"\n" +
 				"Flags:\n" +
 				"      --help   Show help information.\n",
-			Migrations{},
+			Migrations{
+				"generate": migrations.Generate{},
+				"up":       migrations.Up{},
+				"down":     migrations.Down{},
+				"report":   migrations.Report{},
+			},
 			bytes.NewBuffer(nil),
 			[]string{},
 			"",
 		},
 		{
 			false, "",
-			Migrations{},
+			Migrations{
+				"generate": migrations.Generate{},
+				"up":       migrations.Up{},
+				"down":     migrations.Down{},
+				"report":   migrations.Report{},
+			},
 			bytes.NewBuffer(nil),
 			[]string{"--help"},
 			"Manages the lifecycle of a database migration\n" +

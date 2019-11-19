@@ -4,23 +4,23 @@ package releases
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 
-	"github.com/ghodss/yaml"
 	"github.com/olekukonko/tablewriter"
 	"github.com/tidwall/gjson"
 	v1core "k8s.io/api/core/v1"
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/yaml"
 
-	"github.com/trivigy/migrate/v2/types"
+	"github.com/trivigy/migrate/v2/driver"
 )
 
 // GetK8sClientset defines a function which generates a new client connection
 // to kubernetes.
-func GetK8sClientset(ctx context.Context, driver types.Sourcer, namespace string) (*kubernetes.Clientset, error) {
+func GetK8sClientset(ctx context.Context, driver driver.WithSource, namespace string) (*kubernetes.Clientset, error) {
 	output := bytes.NewBuffer(nil)
 	if err := driver.Source(ctx, output); err != nil {
 		return nil, err
@@ -77,29 +77,41 @@ func FallBackNS(namespace, fallback string) string {
 	return "default"
 }
 
+// EmbeddedTable represents an in memory data aggregator for a single kube
+// manifest kind.
+type EmbeddedTable struct {
+	Results []runtime.Object
+	Table   *tablewriter.Table
+	Buffer  *bytes.Buffer
+}
+
 // NewEmbeddedTable defines helper function for generating tabled data.
-func NewEmbeddedTable() (*tablewriter.Table, *bytes.Buffer) {
-	buf := bytes.NewBuffer(nil)
-	tbl := tablewriter.NewWriter(buf)
-	tbl.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	tbl.SetBorder(false)
-	tbl.SetAutoWrapText(false)
-	return tbl, buf
+func NewEmbeddedTable() *EmbeddedTable {
+	tbl := &EmbeddedTable{Buffer: bytes.NewBuffer(nil)}
+	tbl.Table = tablewriter.NewWriter(tbl.Buffer)
+	tbl.Table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	tbl.Table.SetBorder(false)
+	tbl.Table.SetAutoWrapText(false)
+	return tbl
 }
 
 // FilterResult helper function allows jq like filtering through a json.
 func FilterResult(value interface{}, filter string) (string, error) {
-	rbytes, err := json.Marshal(value)
+	rbytes, err := yaml.Marshal(value)
 	if err != nil {
 		return "", err
 	}
 
-	found := string(rbytes)
-	if filter != "" && filter != "." {
-		found = gjson.Get(string(rbytes), filter).Raw
+	found, err := yaml.YAMLToJSON(rbytes)
+	if err != nil {
+		return "", err
 	}
 
-	result, err := yaml.JSONToYAML([]byte(found))
+	if filter != "" && filter != "." {
+		found = []byte(gjson.Get(string(found), filter).Raw)
+	}
+
+	result, err := yaml.JSONToYAML(found)
 	if err != nil {
 		return "", err
 	}

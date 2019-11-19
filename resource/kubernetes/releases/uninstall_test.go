@@ -21,7 +21,7 @@ func (r *ReleasesSuite) TestUninstallCommand() {
 	}{
 		{
 			false, "",
-			Uninstall{Namespace: r.Namespace, Releases: r.Releases, Driver: r.Driver},
+			Uninstall{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{},
 			"",

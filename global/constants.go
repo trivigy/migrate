@@ -8,9 +8,7 @@ const (
 	// UnknownStr defines a value used for returning default enum string.
 	UnknownStr = "unknown"
 
-	// UnknownJSONStr similar to `UnknownStr` but assumes that json encoding
-	// occurred.
-	UnknownJSONStr = `"unknown"`
+	RefRoot = "root"
 )
 
 const (

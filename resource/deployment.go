@@ -1,23 +1,19 @@
 package resource
 
 import (
+	"context"
 	"io"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
-	"github.com/trivigy/migrate/v2/resource/primitive"
 	"github.com/trivigy/migrate/v2/types"
 )
 
 // Deployment represents a deployment root command.
-type Deployment struct {
-	Driver interface {
-		types.Creator
-		types.Destroyer
-	} `json:"driver" yaml:"driver"`
-}
+type Deployment map[string]types.Resource
 
 var _ interface {
 	types.Resource
@@ -25,9 +21,9 @@ var _ interface {
 } = new(Deployment)
 
 // NewCommand returns a new cobra.Command object.
-func (r Deployment) NewCommand(name string) *cobra.Command {
+func (r Deployment) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   name + " COMMAND",
+		Use:   name[strings.LastIndex(name, ".")+1:] + " COMMAND",
 		Short: "Infrastructure setup/teardown management commands.",
 		Long:  "Infrastructure setup/teardown management commands",
 		Args:  require.Args(r.validation),
@@ -40,10 +36,9 @@ func (r Deployment) NewCommand(name string) *cobra.Command {
 
 	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	cmd.AddCommand(
-		primitive.Create{Driver: r.Driver}.NewCommand("create"),
-		primitive.Destroy{Driver: r.Driver}.NewCommand("destroy"),
-	)
+	for key, resource := range r {
+		cmd.AddCommand(resource.NewCommand(ctx, name+"."+key))
+	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -53,10 +48,12 @@ func (r Deployment) NewCommand(name string) *cobra.Command {
 
 // Execute runs the command.
 func (r Deployment) Execute(name string, out io.Writer, args []string) error {
-	main := r.NewCommand(name)
-	main.SetOut(out)
-	main.SetArgs(args)
-	if err := main.Execute(); err != nil {
+	wrap := types.Executor{Name: name, Command: r}
+	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
+	cmd := r.NewCommand(ctx, name)
+	cmd.SetOut(out)
+	cmd.SetArgs(args)
+	if err := cmd.Execute(); err != nil {
 		return err
 	}
 	return nil

@@ -8,6 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/trivigy/migrate/v2/resource/database"
+	"github.com/trivigy/migrate/v2/resource/database/migrations"
+	"github.com/trivigy/migrate/v2/resource/kubernetes"
+	"github.com/trivigy/migrate/v2/resource/kubernetes/releases"
+	"github.com/trivigy/migrate/v2/resource/primitive"
 	"github.com/trivigy/migrate/v2/types"
 )
 
@@ -16,6 +21,67 @@ type EnvironmentsSuite struct {
 }
 
 func (r *EnvironmentsSuite) TestEnvironmentsCommand() {
+	Command := Environments{
+		"development": Environment{
+			"developmentDatabase": Database{
+				"create":  primitive.Create{},
+				"destroy": primitive.Destroy{},
+				"source":  primitive.Source{},
+				"migrations": database.Migrations{
+					"generate": migrations.Generate{},
+					"up":       migrations.Up{},
+					"down":     migrations.Down{},
+					"report":   migrations.Report{},
+				},
+			},
+			"developmentKubernetes": Kubernetes{
+				"create":  primitive.Create{},
+				"destroy": primitive.Destroy{},
+				"source":  primitive.Source{},
+				"releases": kubernetes.Releases{
+					"generate":  releases.Generate{},
+					"install":   releases.Install{},
+					"uninstall": releases.Uninstall{},
+					"update":    releases.Update{},
+					"describe":  releases.Describe{},
+				},
+			},
+			"developmentDomainName": DomainName{
+				"create":  primitive.Create{},
+				"destroy": primitive.Destroy{},
+			},
+		},
+		"staging": Environment{
+			"stagingDatabase": Database{
+				"create":  primitive.Create{},
+				"destroy": primitive.Destroy{},
+				"source":  primitive.Source{},
+				"migrations": database.Migrations{
+					"generate": migrations.Generate{},
+					"up":       migrations.Up{},
+					"down":     migrations.Down{},
+					"report":   migrations.Report{},
+				},
+			},
+			"stagingKubernetes": Kubernetes{
+				"create":  primitive.Create{},
+				"destroy": primitive.Destroy{},
+				"source":  primitive.Source{},
+				"releases": kubernetes.Releases{
+					"generate":  releases.Generate{},
+					"install":   releases.Install{},
+					"uninstall": releases.Uninstall{},
+					"update":    releases.Update{},
+					"describe":  releases.Describe{},
+				},
+			},
+			"stagingDomainName": DomainName{
+				"create":  primitive.Create{},
+				"destroy": primitive.Destroy{},
+			},
+		},
+	}
+
 	testCases := []struct {
 		shouldFail bool
 		onFail     string
@@ -39,36 +105,14 @@ func (r *EnvironmentsSuite) TestEnvironmentsCommand() {
 				"Flags:\n" +
 				"  -e, --env ENV   Run with env ENV configurations. (default \"development\")\n" +
 				"      --help      Show help information.\n",
-			Environments{
-				"development": Collection{
-					"developmentDatabase":   Database{},
-					"developmentKubernetes": Kubernetes{},
-					"developmentDomainName": DomainName{},
-				},
-				"staging": Collection{
-					"stagingDatabase":   Database{},
-					"stagingKubernetes": Kubernetes{},
-					"stagingDomainName": DomainName{},
-				},
-			},
+			Command,
 			bytes.NewBuffer(nil),
 			[]string{},
 			"",
 		},
 		{
 			false, "",
-			Environments{
-				"development": Collection{
-					"developmentDatabase":   Database{},
-					"developmentKubernetes": Kubernetes{},
-					"developmentDomainName": DomainName{},
-				},
-				"staging": Collection{
-					"stagingDatabase":   Database{},
-					"stagingKubernetes": Kubernetes{},
-					"stagingDomainName": DomainName{},
-				},
-			},
+			Command,
 			bytes.NewBuffer(nil),
 			[]string{"--help"},
 			"Usage:\n" +
@@ -98,36 +142,14 @@ func (r *EnvironmentsSuite) TestEnvironmentsCommand() {
 				"Flags:\n" +
 				"  -e, --env ENV   Run with env ENV configurations. (default \"development\")\n" +
 				"      --help      Show help information.\n",
-			Environments{
-				"development": Collection{
-					"developmentDatabase":   Database{},
-					"developmentKubernetes": Kubernetes{},
-					"developmentDomainName": DomainName{},
-				},
-				"staging": Collection{
-					"stagingDatabase":   Database{},
-					"stagingKubernetes": Kubernetes{},
-					"stagingDomainName": DomainName{},
-				},
-			},
+			Command,
 			bytes.NewBuffer(nil),
 			[]string{"-e", "staging"},
 			"",
 		},
 		{
 			false, "",
-			Environments{
-				"development": Collection{
-					"developmentDatabase":   Database{},
-					"developmentKubernetes": Kubernetes{},
-					"developmentDomainName": DomainName{},
-				},
-				"staging": Collection{
-					"stagingDatabase":   Database{},
-					"stagingKubernetes": Kubernetes{},
-					"stagingDomainName": DomainName{},
-				},
-			},
+			Command,
 			bytes.NewBuffer(nil),
 			[]string{"-e", "staging", "--help"},
 			"Usage:\n" +
@@ -144,18 +166,7 @@ func (r *EnvironmentsSuite) TestEnvironmentsCommand() {
 		},
 		{
 			false, "",
-			Environments{
-				"development": Collection{
-					"developmentDatabase":   Database{},
-					"developmentKubernetes": Kubernetes{},
-					"developmentDomainName": DomainName{},
-				},
-				"staging": Collection{
-					"stagingDatabase":   Database{},
-					"stagingKubernetes": Kubernetes{},
-					"stagingDomainName": DomainName{},
-				},
-			},
+			Command,
 			bytes.NewBuffer(nil),
 			[]string{"--help", "-e", "staging"},
 			"Usage:\n" +
@@ -172,18 +183,7 @@ func (r *EnvironmentsSuite) TestEnvironmentsCommand() {
 		},
 		{
 			false, "",
-			Environments{
-				"development": Collection{
-					"developmentDatabase":   Database{},
-					"developmentKubernetes": Kubernetes{},
-					"developmentDomainName": DomainName{},
-				},
-				"staging": Collection{
-					"stagingDatabase":   Database{},
-					"stagingKubernetes": Kubernetes{},
-					"stagingDomainName": DomainName{},
-				},
-			},
+			Command,
 			bytes.NewBuffer(nil),
 			[]string{"--help", "defaultDatabase"},
 			"Usage:\n" +
@@ -200,18 +200,7 @@ func (r *EnvironmentsSuite) TestEnvironmentsCommand() {
 		},
 		{
 			false, "",
-			Environments{
-				"development": Collection{
-					"developmentDatabase":   Database{},
-					"developmentKubernetes": Kubernetes{},
-					"developmentDomainName": DomainName{},
-				},
-				"staging": Collection{
-					"stagingDatabase":   Database{},
-					"stagingKubernetes": Kubernetes{},
-					"stagingDomainName": DomainName{},
-				},
-			},
+			Command,
 			bytes.NewBuffer(nil),
 			[]string{"--help", "defaultDatabase", "--help"},
 			"Usage:\n" +
@@ -228,18 +217,7 @@ func (r *EnvironmentsSuite) TestEnvironmentsCommand() {
 		},
 		{
 			false, "",
-			Environments{
-				"development": Collection{
-					"developmentDatabase":   Database{},
-					"developmentKubernetes": Kubernetes{},
-					"developmentDomainName": DomainName{},
-				},
-				"staging": Collection{
-					"stagingDatabase":   Database{},
-					"stagingKubernetes": Kubernetes{},
-					"stagingDomainName": DomainName{},
-				},
-			},
+			Command,
 			bytes.NewBuffer(nil),
 			[]string{"developmentDatabase", "--help"},
 			"SQL database deployment and migrations management tool\n" +

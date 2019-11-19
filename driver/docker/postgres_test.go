@@ -1,19 +1,74 @@
 package docker
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/Pallinder/go-randomdata"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/trivigy/migrate/v2/types"
+	"github.com/trivigy/migrate/v2/driver"
 )
 
 type PostgresSuite struct {
 	suite.Suite
+	Driver interface {
+		driver.WithCreate
+		driver.WithDestroy
+		driver.WithSource
+	}
+}
+
+func (r *PostgresSuite) SetupSuite() {
+	r.Driver = &Postgres{
+		Name:     strings.ToLower(randomdata.SillyName()),
+		Version:  "9.6",
+		User:     "postgres",
+		Password: "postgres",
+		DBName:   "default",
+	}
+}
+
+func (r *PostgresSuite) TestPostgres_SetupTearDownCycle() {
+	testCases := []struct {
+		shouldFail bool
+		onFail     string
+		buffer     *bytes.Buffer
+		output     string
+	}{
+		{
+			false, "",
+			bytes.NewBuffer(nil),
+			"",
+		},
+	}
+
+	for i, tc := range testCases {
+		failMsg := fmt.Sprintf("test: %d %v", i, spew.Sprint(tc))
+		runner := func() {
+			err := r.Driver.Create(context.Background(), tc.buffer)
+			if err != nil {
+				panic(err.Error())
+			}
+
+			err = r.Driver.Destroy(context.Background(), tc.buffer)
+			if err != nil {
+				panic(err.Error())
+			}
+		}
+
+		if tc.shouldFail {
+			assert.PanicsWithValue(r.T(), tc.onFail, runner, failMsg)
+		} else {
+			assert.NotPanics(r.T(), runner, failMsg)
+		}
+	}
 }
 
 func (r *PostgresSuite) TestPostgres_MarshalUnmarshal() {
@@ -21,9 +76,9 @@ func (r *PostgresSuite) TestPostgres_MarshalUnmarshal() {
 		shouldFail bool
 		onFail     string
 		driver     interface {
-			types.Creator
-			types.Destroyer
-			types.Sourcer
+			driver.WithCreate
+			driver.WithDestroy
+			driver.WithSource
 		}
 	}{
 		{

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/trivigy/migrate/v2/driver"
 	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/internal/store"
 	"github.com/trivigy/migrate/v2/internal/store/model"
@@ -18,16 +20,16 @@ import (
 
 // Down represents the database migration down command object.
 type Down struct {
-	Migrations *types.Migrations `json:"migrations" yaml:"migrations"`
-	Driver     interface {
-		types.Sourcer
+	Driver interface {
+		driver.WithMigrations
+		driver.WithSource
 	} `json:"driver" yaml:"driver"`
 }
 
-// DownOptions is used for executing the run() command.
-type DownOptions struct {
-	Limit  int  `json:"limit" yaml:"limit"`
-	DryRun bool `json:"dryRun" yaml:"dryRun"`
+// downOptions is used for executing the run() command.
+type downOptions struct {
+	Limit int  `json:"limit" yaml:"limit"`
+	Try   bool `json:"dryRun" yaml:"dryRun"`
 }
 
 var _ interface {
@@ -36,24 +38,24 @@ var _ interface {
 } = new(Down)
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
-func (r Down) NewCommand(name string) *cobra.Command {
+func (r Down) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   name,
+		Use:   name[strings.LastIndex(name, ".")+1:],
 		Short: "Rolls back to the previously applied migrations.",
 		Long:  "Rolls back to the previously applied migrations",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			limit, err := cmd.Flags().GetInt("limit")
-			if err != nil {
-				return err
+			if patches, ok := r.Driver.(driver.WithPatches); ok {
+				for _, patch := range *patches.Patches(name) {
+					if err := patch.Do(ctx, cmd.OutOrStdout()); err != nil {
+						return err
+					}
+				}
 			}
 
-			dryRun, err := cmd.Flags().GetBool("dry-run")
-			if err != nil {
-				return err
-			}
-
-			opts := DownOptions{Limit: limit, DryRun: dryRun}
+			limit, _ := cmd.Flags().GetInt("limit")
+			try, _ := cmd.Flags().GetBool("try")
+			opts := downOptions{Limit: limit, Try: try}
 			return r.run(context.Background(), cmd.OutOrStdout(), opts)
 		},
 		SilenceErrors: true,
@@ -69,9 +71,9 @@ func (r Down) NewCommand(name string) *cobra.Command {
 		"limit", "l", 1,
 		"Indicate `NUMBER` of migrations to apply. Set `0` for all.",
 	)
-	flags.Bool(
-		"dry-run", false,
-		"Simulate a migration printing planned queries.",
+	flags.BoolP(
+		"try", "t", false,
+		"Simulates and prints resource execution parameters.",
 	)
 	flags.Bool("help", false, "Show help information.")
 	return cmd
@@ -79,7 +81,9 @@ func (r Down) NewCommand(name string) *cobra.Command {
 
 // Execute runs the command.
 func (r Down) Execute(name string, out io.Writer, args []string) error {
-	cmd := r.NewCommand(name)
+	wrap := types.Executor{Name: name, Command: r}
+	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
+	cmd := r.NewCommand(ctx, name)
 	cmd.SetOut(out)
 	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
@@ -97,7 +101,7 @@ func (r Down) validation(cmd *cobra.Command, args []string) error {
 }
 
 // run is a starting point method for executing the down command.
-func (r Down) run(ctx context.Context, out io.Writer, opts DownOptions) error {
+func (r Down) run(ctx context.Context, out io.Writer, opts downOptions) error {
 	source := bytes.NewBuffer(nil)
 	if err := r.Driver.Source(ctx, source); err != nil {
 		return err
@@ -113,7 +117,7 @@ func (r Down) run(ctx context.Context, out io.Writer, opts DownOptions) error {
 		return err
 	}
 
-	migrationPlan, err := GenerateMigrationPlan(db, types.DirectionDown, r.Migrations)
+	migrationPlan, err := GenerateMigrationPlan(db, types.DirectionDown, r.Driver.Migrations())
 	if err != nil {
 		return err
 	}
@@ -123,7 +127,7 @@ func (r Down) run(ctx context.Context, out io.Writer, opts DownOptions) error {
 		steps = opts.Limit
 	}
 
-	if opts.DryRun {
+	if opts.Try {
 		for i := 0; i < steps; i++ {
 			fmt.Fprintf(out, "==> migration %q (%s)\n",
 				migrationPlan[i].Tag.String()+"_"+migrationPlan[i].Name,

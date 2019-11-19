@@ -17,21 +17,21 @@ import (
 	logutil "sigs.k8s.io/kind/pkg/log"
 	"sigs.k8s.io/yaml"
 
-	"github.com/trivigy/migrate/v2/types"
+	"github.com/trivigy/migrate/v2/driver"
 )
 
 // Kind represents a driver for the Kubernetes IN Docker (sigs.k8s.io/kind)
 // project.
 type Kind struct {
-	Name   string      `json:"name,omitempty" yaml:"name,omitempty"`
+	Name   string      `json:"name" yaml:"name" validate:"required"`
 	Images []string    `json:"images,omitempty" yaml:"images,omitempty"`
 	Config interface{} `json:"config,omitempty" yaml:"config,omitempty"`
 }
 
 var _ interface {
-	types.Creator
-	types.Destroyer
-	types.Sourcer
+	driver.WithCreate
+	driver.WithDestroy
+	driver.WithSource
 } = new(Kind)
 
 // UnmarshalJSON defines custom json unmarshalling procedure.
