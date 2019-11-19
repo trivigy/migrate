@@ -18,16 +18,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
 
-	"github.com/trivigy/migrate/v2/types"
+	"github.com/trivigy/migrate/v2/driver"
 )
 
 type KindSuite struct {
 	suite.Suite
-	Namespace string
-	Driver    interface {
-		types.Creator
-		types.Destroyer
-		types.Sourcer
+	Driver interface {
+		driver.WithCreate
+		driver.WithDestroy
+		driver.WithSource
 	}
 }
 
@@ -59,7 +58,6 @@ func (r *KindSuite) SetupSuite() {
 	err = docker.ImageTag(ctx, refStr, tagged2)
 	assert.Nil(r.T(), err)
 
-	r.Namespace = "unittest"
 	r.Driver = &Kind{
 		Images: []string{tagged1, tagged2},
 		Name:   strings.ToLower(randomdata.SillyName()),
@@ -116,9 +114,9 @@ func (r *KindSuite) TestKind_MarshalUnmarshal() {
 		shouldFail bool
 		onFail     string
 		driver     interface {
-			types.Creator
-			types.Destroyer
-			types.Sourcer
+			driver.WithCreate
+			driver.WithDestroy
+			driver.WithSource
 		}
 	}{
 		{

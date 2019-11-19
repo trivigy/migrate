@@ -2,23 +2,19 @@
 package database
 
 import (
+	"context"
 	"io"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
-	"github.com/trivigy/migrate/v2/resource/database/migrations"
 	"github.com/trivigy/migrate/v2/types"
 )
 
 // Migrations represents a database migration root command.
-type Migrations struct {
-	Migrations *types.Migrations `json:"migrations" yaml:"migrations"`
-	Driver     interface {
-		types.Sourcer
-	} `json:"driver" yaml:"driver"`
-}
+type Migrations map[string]types.Resource
 
 var _ interface {
 	types.Resource
@@ -26,9 +22,9 @@ var _ interface {
 } = new(Migrations)
 
 // NewCommand returns a new cobra.Command object.
-func (r Migrations) NewCommand(name string) *cobra.Command {
+func (r Migrations) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   name + " COMMAND",
+		Use:   name[strings.LastIndex(name, ".")+1:] + " COMMAND",
 		Short: "Manages the lifecycle of a database migration.",
 		Long:  "Manages the lifecycle of a database migration",
 		Args:  require.Args(r.validation),
@@ -41,23 +37,9 @@ func (r Migrations) NewCommand(name string) *cobra.Command {
 
 	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	cmd.AddCommand(
-		migrations.Generate{
-			Migrations: r.Migrations,
-		}.NewCommand("generate"),
-		migrations.Up{
-			Migrations: r.Migrations,
-			Driver:     r.Driver,
-		}.NewCommand("up"),
-		migrations.Down{
-			Migrations: r.Migrations,
-			Driver:     r.Driver,
-		}.NewCommand("down"),
-		migrations.Report{
-			Migrations: r.Migrations,
-			Driver:     r.Driver,
-		}.NewCommand("report"),
-	)
+	for key, resource := range r {
+		cmd.AddCommand(resource.NewCommand(ctx, name+"."+key))
+	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -67,10 +49,12 @@ func (r Migrations) NewCommand(name string) *cobra.Command {
 
 // Execute runs the command.
 func (r Migrations) Execute(name string, out io.Writer, args []string) error {
-	main := r.NewCommand(name)
-	main.SetOut(out)
-	main.SetArgs(args)
-	if err := main.Execute(); err != nil {
+	wrap := types.Executor{Name: name, Command: r}
+	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
+	cmd := r.NewCommand(ctx, name)
+	cmd.SetOut(out)
+	cmd.SetArgs(args)
+	if err := cmd.Execute(); err != nil {
 		return err
 	}
 	return nil

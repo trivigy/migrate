@@ -3,7 +3,6 @@ package releases
 import (
 	"bytes"
 	"fmt"
-	"strings"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
@@ -12,9 +11,6 @@ import (
 )
 
 func (r *ReleasesSuite) TestDescribeCommand() {
-	install := Install{Namespace: r.Namespace, Releases: r.Releases, Driver: r.Driver}
-	assert.Nil(r.T(), install.Execute("install", bytes.NewBuffer(nil), []string{}))
-
 	testCases := []struct {
 		shouldFail bool
 		onFail     string
@@ -25,22 +21,34 @@ func (r *ReleasesSuite) TestDescribeCommand() {
 	}{
 		{
 			false, "",
-			Describe{Namespace: r.Namespace, Releases: r.Releases, Driver: r.Driver},
+			Describe{Driver: r.Driver},
 			bytes.NewBuffer(nil),
-			[]string{"create-unittest-cluster:0.0.1", "Service", "metadata.name"},
-			"unittest",
+			[]string{},
+			"+-------------------------+---------+------------+--------------------------------------------------------------------------------+\n" +
+				"|          NAME           | VERSION |    KIND    |                                    RESULTS                                     |\n" +
+				"+-------------------------+---------+------------+--------------------------------------------------------------------------------+\n" +
+				"| create-unittest-cluster | 0.0.1   | Service    |     | NAMESPACE | NAME     | TYPE | CLUSTER-IP | EXTERNAL-IP | PORT(S) | AGE   |\n" +
+				"|                         |         |            | +---+-----------+----------+------+------------+-------------+---------+-----+ |\n" +
+				"|                         |         |            |   ✗ | unittest  | unittest |                                                   |\n" +
+				"|                         |         |            |                                                                                |\n" +
+				"|                         |         | Deployment |     | NAMESPACE | NAME     | READY | UP-TO-DATE | AVAILABLE | AGE              |\n" +
+				"|                         |         |            | +---+-----------+----------+-------+------------+-----------+-----+            |\n" +
+				"|                         |         |            |   ✗ | unittest  | unittest |                                                   |\n" +
+				"|                         |         |            |                                                                                |\n" +
+				"+-------------------------+---------+------------+--------------------------------------------------------------------------------+\n",
 		},
 	}
 
 	for i, tc := range testCases {
 		failMsg := fmt.Sprintf("test: %d %v", i, spew.Sprint(tc))
 		runner := func() {
-			err := tc.cmd.Execute("describe", tc.buffer, tc.args)
+			err := tc.cmd.Execute("list", tc.buffer, tc.args)
 			if err != nil {
 				panic(err.Error())
 			}
 
-			if tc.output != strings.TrimSpace(tc.buffer.String()) {
+			if tc.output != tc.buffer.String() {
+				fmt.Printf("%q\n", tc.buffer.String())
 				panic(tc.buffer.String())
 			}
 		}
@@ -51,7 +59,4 @@ func (r *ReleasesSuite) TestDescribeCommand() {
 			assert.NotPanics(r.T(), runner, failMsg)
 		}
 	}
-
-	uninstall := Uninstall{Namespace: r.Namespace, Releases: r.Releases, Driver: r.Driver}
-	assert.Nil(r.T(), uninstall.Execute("uninstall", bytes.NewBuffer(nil), []string{}))
 }

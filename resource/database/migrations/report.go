@@ -7,11 +7,13 @@ import (
 	"io"
 	"net/url"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 
+	"github.com/trivigy/migrate/v2/driver"
 	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/internal/store"
 	"github.com/trivigy/migrate/v2/internal/store/model"
@@ -21,9 +23,9 @@ import (
 
 // Report represents the database migration report command object.
 type Report struct {
-	Migrations *types.Migrations `json:"migrations" yaml:"migrations"`
-	Driver     interface {
-		types.Sourcer
+	Driver interface {
+		driver.WithMigrations
+		driver.WithSource
 	} `json:"driver" yaml:"driver"`
 }
 
@@ -33,9 +35,9 @@ var _ interface {
 } = new(Report)
 
 // NewCommand creates a new cobra.Command, configures it and returns it.
-func (r Report) NewCommand(name string) *cobra.Command {
+func (r Report) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   name,
+		Use:   name[strings.LastIndex(name, ".")+1:],
 		Short: "Prints which migrations were applied and when.",
 		Long:  "Prints which migrations were applied and when",
 		Args:  require.Args(r.validation),
@@ -57,7 +59,9 @@ func (r Report) NewCommand(name string) *cobra.Command {
 
 // Execute runs the command.
 func (r Report) Execute(name string, out io.Writer, args []string) error {
-	cmd := r.NewCommand(name)
+	wrap := types.Executor{Name: name, Command: r}
+	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
+	cmd := r.NewCommand(ctx, name)
 	cmd.SetOut(out)
 	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
@@ -95,8 +99,8 @@ func (r Report) run(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	sort.Sort(r.Migrations)
-	sortedRegistryMigrations := r.Migrations
+	sort.Sort(r.Driver.Migrations())
+	sortedRegistryMigrations := r.Driver.Migrations()
 	sortedDatabaseMigrations, err := db.Migrations.GetMigrationsSorted()
 	if err != nil {
 		return err
@@ -136,7 +140,7 @@ func (r Report) run(ctx context.Context, out io.Writer) error {
 		}
 	}
 
-	if len(*r.Migrations) > 0 {
+	if len(*r.Driver.Migrations()) > 0 {
 		table.Render()
 	}
 

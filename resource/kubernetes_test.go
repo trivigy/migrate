@@ -8,6 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/trivigy/migrate/v2/resource/kubernetes"
+	"github.com/trivigy/migrate/v2/resource/kubernetes/releases"
+	"github.com/trivigy/migrate/v2/resource/primitive"
 	"github.com/trivigy/migrate/v2/types"
 )
 
@@ -38,14 +41,36 @@ func (r *ClusterSuite) TestClusterCommand() {
 				"  source      Prints the data source name as a connection string.\n" +
 				"\n" +
 				"Flags:\n      --help   Show help information.\n",
-			Kubernetes{},
+			Kubernetes{
+				"create":  primitive.Create{},
+				"destroy": primitive.Destroy{},
+				"source":  primitive.Source{},
+				"releases": kubernetes.Releases{
+					"generate":  releases.Generate{},
+					"install":   releases.Install{},
+					"uninstall": releases.Uninstall{},
+					"update":    releases.Update{},
+					"describe":  releases.Describe{},
+				},
+			},
 			bytes.NewBuffer(nil),
 			[]string{},
 			"",
 		},
 		{
 			false, "",
-			Kubernetes{},
+			Kubernetes{
+				"create":  primitive.Create{},
+				"destroy": primitive.Destroy{},
+				"source":  primitive.Source{},
+				"releases": kubernetes.Releases{
+					"generate":  releases.Generate{},
+					"install":   releases.Install{},
+					"uninstall": releases.Uninstall{},
+					"update":    releases.Update{},
+					"describe":  releases.Describe{},
+				},
+			},
 			bytes.NewBuffer(nil),
 			[]string{"--help"},
 			"Kubernetes cluster release and deployment controller\n" +

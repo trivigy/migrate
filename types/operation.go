@@ -18,7 +18,7 @@ type Operation struct {
 // Execute runs the query operation on the database.
 func (r Operation) Execute(db *store.Context, migration *Migration, d Direction) error {
 	var err error
-	var executor Executor
+	var executor OpExecutor
 
 	dbMap := db.GetDBMap()
 	if r.DisableTx {
@@ -56,8 +56,8 @@ func (r Operation) Execute(db *store.Context, migration *Migration, d Direction)
 	return nil
 }
 
-// Executor describes an abstract database operations executor.
-type Executor interface {
+// OpExecutor describes an abstract database operations executor.
+type OpExecutor interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	Insert(list ...interface{}) error
 	Delete(list ...interface{}) (int64, error)

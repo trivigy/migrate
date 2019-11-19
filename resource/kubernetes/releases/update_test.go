@@ -10,7 +10,7 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-func (r *ReleasesSuite) TestHistoryCommand() {
+func (r *ReleasesSuite) TestUpgradeCommand() {
 	testCases := []struct {
 		shouldFail bool
 		onFail     string
@@ -21,7 +21,7 @@ func (r *ReleasesSuite) TestHistoryCommand() {
 	}{
 		{
 			false, "",
-			History{Namespace: r.Namespace, Releases: r.Releases, Driver: r.Driver},
+			Update{Driver: r.Driver},
 			bytes.NewBuffer(nil),
 			[]string{},
 			"",
@@ -31,7 +31,7 @@ func (r *ReleasesSuite) TestHistoryCommand() {
 	for i, tc := range testCases {
 		failMsg := fmt.Sprintf("test: %d %v", i, spew.Sprint(tc))
 		runner := func() {
-			err := tc.cmd.Execute("history", tc.buffer, tc.args)
+			err := tc.cmd.Execute("upgrade", tc.buffer, tc.args)
 			if err != nil {
 				panic(err.Error())
 			}

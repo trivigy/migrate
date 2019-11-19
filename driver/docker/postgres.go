@@ -17,26 +17,27 @@ import (
 	// postgres driver
 	_ "github.com/lib/pq"
 
+	"github.com/trivigy/migrate/v2/driver"
 	"github.com/trivigy/migrate/v2/internal/retry"
 	"github.com/trivigy/migrate/v2/types"
 )
 
 // Postgres represents a driver for a docker based postgres database.
 type Postgres struct {
-	Name         string `json:"name" yaml:"name"`
-	Version      string `json:"version" yaml:"version"`
-	Password     string `json:"password" yaml:"password"`
-	User         string `json:"user" yaml:"user"`
-	DBName       string `json:"dbName" yaml:"dbName"`
-	InitDBArgs   string `json:"initDBArgs" yaml:"initDBArgs"`
-	InitDBWalDir string `json:"initDBWalDir" yaml:"initDBWalDir"`
-	PGData       string `json:"pgData" yaml:"pgData"`
+	Name         string `json:"name" yaml:"name" validate:"required"`
+	Version      string `json:"version" yaml:"version" validate:"required"`
+	Password     string `json:"password,omitempty" yaml:"password,omitempty"`
+	User         string `json:"user,omitempty" yaml:"user,omitempty"`
+	DBName       string `json:"dbName,omitempty" yaml:"dbName,omitempty"`
+	InitDBArgs   string `json:"initDBArgs,omitempty" yaml:"initDBArgs,omitempty"`
+	InitDBWalDir string `json:"initDBWalDir,omitempty" yaml:"initDBWalDir,omitempty"`
+	PGData       string `json:"pgData,omitempty" yaml:"pgData,omitempty"`
 }
 
 var _ interface {
-	types.Creator
-	types.Destroyer
-	types.Sourcer
+	driver.WithCreate
+	driver.WithDestroy
+	driver.WithSource
 } = new(Postgres)
 
 // Create executes the resource creation process.
@@ -59,6 +60,7 @@ func (r Postgres) Create(ctx context.Context, out io.Writer) error {
 	}
 
 	if len(containers) != 0 {
+		fmt.Fprintf(out, "database %q already exists\n", r.Name)
 		return nil
 	}
 

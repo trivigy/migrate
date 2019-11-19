@@ -2,24 +2,19 @@
 package kubernetes
 
 import (
+	"context"
 	"io"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
-	"github.com/trivigy/migrate/v2/resource/kubernetes/releases"
 	"github.com/trivigy/migrate/v2/types"
 )
 
 // Releases represents a cluster release root command.
-type Releases struct {
-	Namespace *string         `json:"namespace" yaml:"namespace"`
-	Releases  *types.Releases `json:"releases" yaml:"releases"`
-	Driver    interface {
-		types.Sourcer
-	} `json:"driver" yaml:"driver"`
-}
+type Releases map[string]types.Resource
 
 var _ interface {
 	types.Resource
@@ -27,9 +22,9 @@ var _ interface {
 } = new(Releases)
 
 // NewCommand returns a new cobra.Command object.
-func (r Releases) NewCommand(name string) *cobra.Command {
+func (r Releases) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   name + " COMMAND",
+		Use:   name[strings.LastIndex(name, ".")+1:] + " COMMAND",
 		Short: "Manages the lifecycle of a kubernetes release.",
 		Long:  "Manages the lifecycle of a kubernetes release",
 		Args:  require.Args(r.validation),
@@ -42,41 +37,9 @@ func (r Releases) NewCommand(name string) *cobra.Command {
 
 	cmd.SetUsageTemplate(global.DefaultUsageTemplate)
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	cmd.AddCommand(
-		releases.Generate{
-			Releases: r.Releases,
-		}.NewCommand("generate"),
-		releases.Install{
-			Namespace: r.Namespace,
-			Releases:  r.Releases,
-			Driver:    r.Driver,
-		}.NewCommand("install"),
-		releases.Upgrade{
-			Namespace: r.Namespace,
-			Releases:  r.Releases,
-			Driver:    r.Driver,
-		}.NewCommand("upgrade"),
-		releases.Uninstall{
-			Namespace: r.Namespace,
-			Releases:  r.Releases,
-			Driver:    r.Driver,
-		}.NewCommand("uninstall"),
-		releases.List{
-			Namespace: r.Namespace,
-			Releases:  r.Releases,
-			Driver:    r.Driver,
-		}.NewCommand("list"),
-		releases.Describe{
-			Namespace: r.Namespace,
-			Releases:  r.Releases,
-			Driver:    r.Driver,
-		}.NewCommand("describe"),
-		releases.History{
-			Namespace: r.Namespace,
-			Releases:  r.Releases,
-			Driver:    r.Driver,
-		}.NewCommand("history"),
-	)
+	for key, resource := range r {
+		cmd.AddCommand(resource.NewCommand(ctx, name+"."+key))
+	}
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
@@ -85,11 +48,13 @@ func (r Releases) NewCommand(name string) *cobra.Command {
 }
 
 // Execute runs the command.
-func (r Releases) Execute(name string, output io.Writer, args []string) error {
-	main := r.NewCommand(name)
-	main.SetOut(output)
-	main.SetArgs(args)
-	if err := main.Execute(); err != nil {
+func (r Releases) Execute(name string, out io.Writer, args []string) error {
+	wrap := types.Executor{Name: name, Command: r}
+	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
+	cmd := r.NewCommand(ctx, name)
+	cmd.SetOut(out)
+	cmd.SetArgs(args)
+	if err := cmd.Execute(); err != nil {
 		return err
 	}
 	return nil

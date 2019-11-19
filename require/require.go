@@ -37,3 +37,11 @@ func ExactArgs(args []string, n int) error {
 	}
 	return nil
 }
+
+// MaxArgs checks that no more than n positional arguments were provided.
+func MaxArgs(args []string, n int) error {
+	if len(args) > n {
+		return fmt.Errorf("accepts at most %d arg(s), received %d", n, len(args))
+	}
+	return nil
+}

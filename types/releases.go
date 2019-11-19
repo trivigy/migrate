@@ -4,16 +4,16 @@ package types
 type Releases []*Release
 
 // Len returns length of releases collection
-func (s Releases) Len() int {
-	return len(s)
+func (r Releases) Len() int {
+	return len(r)
 }
 
 // Swap swaps two releases inside the collection by its indices
-func (s Releases) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
+func (r Releases) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
 }
 
 // Less checks if release at index i is less than release at index j
-func (s Releases) Less(i, j int) bool {
-	return s[i].Name < s[j].Name || (s[i].Name == s[j].Name && s[i].Version.LT(s[j].Version))
+func (r Releases) Less(i, j int) bool {
+	return r[i].Name < r[j].Name || (r[i].Name == r[j].Name && r[i].Version.LT(r[j].Version))
 }

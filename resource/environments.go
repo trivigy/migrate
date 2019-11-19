@@ -2,10 +2,12 @@ package resource
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"io"
 	"io/ioutil"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -15,7 +17,7 @@ import (
 )
 
 // Environments represents a environments aggregator command.
-type Environments map[string]Collection
+type Environments map[string]Environment
 
 var _ interface {
 	types.Resource
@@ -23,9 +25,9 @@ var _ interface {
 } = new(Environments)
 
 // NewCommand returns a new cobra.Command object.
-func (r Environments) NewCommand(name string) *cobra.Command {
+func (r Environments) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:  name + " [flags] COMMAND",
+		Use:  name[strings.LastIndex(name, ".")+1:] + " [flags] COMMAND",
 		Args: require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rbytes, err := ioutil.ReadAll(cmd.InOrStdin())
@@ -38,7 +40,7 @@ func (r Environments) NewCommand(name string) *cobra.Command {
 			out := cmd.OutOrStdout()
 			args = append(args, tail...)
 			env, _ := cmd.Flags().GetString("env")
-			return r.run(out, env, name, args)
+			return r.run(ctx, out, env, name, args)
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -59,7 +61,9 @@ func (r Environments) NewCommand(name string) *cobra.Command {
 
 // Execute runs the command.
 func (r Environments) Execute(name string, out io.Writer, args []string) error {
-	cmd := r.NewCommand(name)
+	wrap := types.Executor{Name: name, Command: r}
+	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
+	cmd := r.NewCommand(ctx, name)
 	cmd.SetOut(out)
 
 	// horible work around because spf13/pflag does not respect flag post
@@ -102,8 +106,8 @@ func (r Environments) validation(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (r Environments) run(out io.Writer, env, name string, args []string) error {
-	cmd := r[env].NewCommand(name)
+func (r Environments) run(ctx context.Context, out io.Writer, env, name string, args []string) error {
+	cmd := r[env].NewCommand(ctx, name)
 	cmd.SetOut(out)
 	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
@@ -116,8 +120,10 @@ func (r Environments) helpFunc(helpFunc func(*cobra.Command, []string)) func(*co
 	return func(cmd *cobra.Command, args []string) {
 		cmd.SetUsageTemplate(global.DefaultUsageTemplate)
 
+		// This is just for generating documentation therefore context does not
+		// matter here, therefore context.Background() is good enough.
 		env, _ := cmd.Flags().GetString("env")
-		tmp := r[env].NewCommand(env)
+		tmp := r[env].NewCommand(context.Background(), env)
 		cmd.AddCommand(tmp.Commands()...)
 
 		if helpFunc != nil {

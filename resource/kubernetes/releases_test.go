@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/trivigy/migrate/v2/resource/kubernetes/releases"
 	"github.com/trivigy/migrate/v2/types"
 )
 
@@ -32,24 +33,34 @@ func (r *ReleaseSuite) TestReleaseCommand() {
 				"  releases COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
-				"  describe    Prints release resources detail information.\n" +
+				"  describe    Describe registered releases with states information.\n" +
 				"  generate    Adds a new release template.\n" +
-				"  history     Prints revisions history of deployed releases.\n" +
 				"  install     Deploys release resources on running cluster.\n" +
-				"  list        List registered releases with states information.\n" +
 				"  uninstall   Stops a running release and removes the resources.\n" +
-				"  upgrade     Redeploy a modified release and track revision version.\n" +
+				"  update      Redeploy a modified release and track revision version.\n" +
 				"\n" +
 				"Flags:\n" +
 				"      --help   Show help information.\n",
-			Releases{},
+			Releases{
+				"generate":  releases.Generate{},
+				"install":   releases.Install{},
+				"uninstall": releases.Uninstall{},
+				"update":    releases.Update{},
+				"describe":  releases.Describe{},
+			},
 			bytes.NewBuffer(nil),
 			[]string{},
 			"",
 		},
 		{
 			false, "",
-			Releases{},
+			Releases{
+				"generate":  releases.Generate{},
+				"install":   releases.Install{},
+				"uninstall": releases.Uninstall{},
+				"update":    releases.Update{},
+				"describe":  releases.Describe{},
+			},
 			bytes.NewBuffer(nil),
 			[]string{"--help"},
 			"Manages the lifecycle of a kubernetes release\n" +
@@ -58,13 +69,11 @@ func (r *ReleaseSuite) TestReleaseCommand() {
 				"  releases COMMAND [flags]\n" +
 				"\n" +
 				"Available Commands:\n" +
-				"  describe    Prints release resources detail information.\n" +
+				"  describe    Describe registered releases with states information.\n" +
 				"  generate    Adds a new release template.\n" +
-				"  history     Prints revisions history of deployed releases.\n" +
 				"  install     Deploys release resources on running cluster.\n" +
-				"  list        List registered releases with states information.\n" +
 				"  uninstall   Stops a running release and removes the resources.\n" +
-				"  upgrade     Redeploy a modified release and track revision version.\n" +
+				"  update      Redeploy a modified release and track revision version.\n" +
 				"\n" +
 				"Flags:\n" +
 				"      --help   Show help information.\n",

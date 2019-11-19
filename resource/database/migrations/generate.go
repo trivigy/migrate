@@ -1,6 +1,7 @@
 package migrations
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/spf13/cobra"
 
+	"github.com/trivigy/migrate/v2/driver"
 	"github.com/trivigy/migrate/v2/global"
 	"github.com/trivigy/migrate/v2/require"
 	"github.com/trivigy/migrate/v2/types"
@@ -40,11 +42,14 @@ func init() {
 // Generate represents the generate command which allows for generating new
 // templates of the database migrations file.
 type Generate struct {
-	Migrations *types.Migrations `json:"migrations" yaml:"migrations"`
+	Driver interface {
+		driver.WithMigrations
+		driver.WithSource
+	} `json:"driver" yaml:"driver"`
 }
 
-// GenerateOptions is used for executing the run() method.
-type GenerateOptions struct {
+// generateOptions is used for executing the run() method.
+type generateOptions struct {
 	Dir  string `json:"dir" yaml:"dir"`
 	Name string `json:"name" yaml:"name"`
 	Tag  string `json:"tag" yaml:"tag"`
@@ -56,9 +61,9 @@ var _ interface {
 } = new(Generate)
 
 // NewCommand returns a new cobra.Command generate command object.
-func (r Generate) NewCommand(name string) *cobra.Command {
+func (r Generate) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   name + " NAME[:TAG]",
+		Use:   name[strings.LastIndex(name, ".")+1:] + " NAME[:TAG]",
 		Short: "Adds a new blank migration with increasing version.",
 		Long:  "Adds a new blank migration with increasing version",
 		Args:  require.Args(r.validation),
@@ -72,7 +77,7 @@ func (r Generate) NewCommand(name string) *cobra.Command {
 			parts = append(parts, "")
 			name, tag := parts[0], parts[1]
 
-			opts := GenerateOptions{Dir: dir, Name: name, Tag: tag}
+			opts := generateOptions{Dir: dir, Name: name, Tag: tag}
 			return r.run(cmd.OutOrStdout(), opts)
 		},
 		SilenceErrors: true,
@@ -94,7 +99,9 @@ func (r Generate) NewCommand(name string) *cobra.Command {
 
 // Execute runs the command.
 func (r Generate) Execute(name string, out io.Writer, args []string) error {
-	cmd := r.NewCommand(name)
+	wrap := types.Executor{Name: name, Command: r}
+	ctx := context.WithValue(context.Background(), global.RefRoot, wrap)
+	cmd := r.NewCommand(ctx, name)
 	cmd.SetOut(out)
 	cmd.SetArgs(args)
 	if err := cmd.Execute(); err != nil {
@@ -126,7 +133,7 @@ func (r Generate) validation(cmd *cobra.Command, args []string) error {
 }
 
 // run is a starting point method for executing the generate command.
-func (r Generate) run(out io.Writer, opts GenerateOptions) error {
+func (r Generate) run(out io.Writer, opts generateOptions) error {
 	base, err := filepath.Abs(opts.Dir)
 	if err != nil {
 		return err
@@ -136,9 +143,9 @@ func (r Generate) run(out io.Writer, opts GenerateOptions) error {
 		return fmt.Errorf("directory %q not found", opts.Dir)
 	}
 
-	sort.Sort(*r.Migrations)
+	sort.Sort(*r.Driver.Migrations())
 	tags := semver.Versions{semver.Version{}}
-	for _, rgMig := range *r.Migrations {
+	for _, rgMig := range *r.Driver.Migrations() {
 		tags = append(tags, rgMig.Tag)
 	}
 

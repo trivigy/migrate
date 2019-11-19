@@ -30,14 +30,14 @@ func (r *MigrationsSuite) TestGenerateCommand() {
 	}{
 		{
 			false, "",
-			Generate{Migrations: r.Migrations},
+			Generate{Driver: r.Driver},
 			// r.config,
 			bytes.NewBuffer(nil),
 			[]string{"example", "-d", dir},
 		},
 		{
 			true, "directory \"./not-found\" not found",
-			Generate{Migrations: r.Migrations},
+			Generate{Driver: r.Driver},
 			// r.config,
 			bytes.NewBuffer(nil),
 			[]string{"example", "-d", "./not-found"},
@@ -52,7 +52,7 @@ func (r *MigrationsSuite) TestGenerateCommand() {
 				"Flags:\n" +
 				"  -d, --dir PATH   Specify directory PATH where to generate miration file. (default \".\")\n" +
 				"      --help       Show help information.\n",
-			Generate{Migrations: r.Migrations},
+			Generate{Driver: r.Driver},
 			// r.config,
 			bytes.NewBuffer(nil),
 			[]string{},
@@ -67,7 +67,7 @@ func (r *MigrationsSuite) TestGenerateCommand() {
 				"Flags:\n" +
 				"  -d, --dir PATH   Specify directory PATH where to generate miration file. (default \".\")\n" +
 				"      --help       Show help information.\n",
-			Generate{Migrations: r.Migrations},
+			Generate{Driver: r.Driver},
 			// r.config,
 			bytes.NewBuffer(nil),
 			[]string{"name:wrong"},
@@ -82,7 +82,7 @@ func (r *MigrationsSuite) TestGenerateCommand() {
 				"Flags:\n" +
 				"  -d, --dir PATH   Specify directory PATH where to generate miration file. (default \".\")\n" +
 				"      --help       Show help information.\n",
-			Generate{Migrations: r.Migrations},
+			Generate{Driver: r.Driver},
 			// r.config,
 			bytes.NewBuffer(nil),
 			[]string{"name:0.0.0-alpha.2+001"},

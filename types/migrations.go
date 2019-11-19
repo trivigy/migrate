@@ -4,16 +4,16 @@ package types
 type Migrations []*Migration
 
 // Len returns length of migrations collection
-func (s Migrations) Len() int {
-	return len(s)
+func (r Migrations) Len() int {
+	return len(r)
 }
 
 // Swap swaps two migrations inside the collection by its indices
-func (s Migrations) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
+func (r Migrations) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
 }
 
 // Less checks if migration at index i is less than migration at index j
-func (s Migrations) Less(i, j int) bool {
-	return s[i].Tag.LT(s[j].Tag)
+func (r Migrations) Less(i, j int) bool {
+	return r[i].Tag.LT(r[j].Tag)
 }
