@@ -65,7 +65,7 @@ var _ interface {
 // NewCommand returns a new cobra.Command generate command object.
 func (r Generate) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   name + " NAME[:TAG]",
+		Use:   name[strings.LastIndex(name, ".")+1:] + " NAME[:TAG]",
 		Short: "Adds a new release template.",
 		Long:  "Adds a new release template",
 		Args:  require.Args(r.validation),

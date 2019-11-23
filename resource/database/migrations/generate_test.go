@@ -9,7 +9,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/trivigy/migrate/v2/internal/testutils"
+	"github.com/trivigy/migrate/v2/testutils"
 	"github.com/trivigy/migrate/v2/types"
 )
 

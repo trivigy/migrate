@@ -28,7 +28,7 @@ func (r Database) NewCommand(ctx context.Context, name string) *cobra.Command {
 		Long:  "SQL database deployment and migrations management tool",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+			return cmd.Help()
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,

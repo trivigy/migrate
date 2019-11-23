@@ -13,7 +13,7 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
-// Collection represents a collection aggregator command.
+// Environment represents an environment aggregator command.
 type Environment map[string]types.Resource
 
 var _ interface {
@@ -27,7 +27,7 @@ func (r Environment) NewCommand(ctx context.Context, name string) *cobra.Command
 		Use:  name[strings.LastIndex(name, ".")+1:] + " COMMAND",
 		Args: require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+			return cmd.Help()
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,

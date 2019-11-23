@@ -4,6 +4,7 @@ package docker
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/jsonmessage"
 
 	// postgres driver
 	_ "github.com/lib/pq"
@@ -24,8 +26,8 @@ import (
 
 // Postgres represents a driver for a docker based postgres database.
 type Postgres struct {
-	Name         string `json:"name" yaml:"name" validate:"required"`
-	Version      string `json:"version" yaml:"version" validate:"required"`
+	Name         string `json:"name" yaml:"name"`
+	Version      string `json:"version" yaml:"version"`
 	Password     string `json:"password,omitempty" yaml:"password,omitempty"`
 	User         string `json:"user,omitempty" yaml:"user,omitempty"`
 	DBName       string `json:"dbName,omitempty" yaml:"dbName,omitempty"`
@@ -71,8 +73,19 @@ func (r Postgres) Create(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	if _, err = io.Copy(out, reader); err != nil {
-		return err
+	decoder := json.NewDecoder(reader)
+	for {
+		var jm jsonmessage.JSONMessage
+		if err := decoder.Decode(&jm); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+
+		if err := jm.Display(out, false); err != nil {
+			return err
+		}
 	}
 
 	envVars := make([]string, 0)

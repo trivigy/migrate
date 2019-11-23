@@ -15,8 +15,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 
 	"github.com/trivigy/migrate/v2/driver"
 )
@@ -61,13 +60,13 @@ func (r *KindSuite) SetupSuite() {
 	r.Driver = &Kind{
 		Images: []string{tagged1, tagged2},
 		Name:   strings.ToLower(randomdata.SillyName()),
-		Config: &v1alpha3.Cluster{
-			TypeMeta: metav1.TypeMeta{
+		Config: &v1alpha4.Cluster{
+			TypeMeta: v1alpha4.TypeMeta{
 				Kind:       "Cluster",
-				APIVersion: "kind.sigs.k8s.io/v1alpha3",
+				APIVersion: "kind.x-k8s.io/v1alpha4",
 			},
-			Nodes: []v1alpha3.Node{
-				{Role: "control-plane"},
+			Nodes: []v1alpha4.Node{
+				{Role: v1alpha4.ControlPlaneRole},
 			},
 		},
 	}
@@ -124,15 +123,15 @@ func (r *KindSuite) TestKind_MarshalUnmarshal() {
 			&Kind{
 				Name:   "unittest",
 				Images: []string{"unittest1", "unittest2"},
-				Config: &v1alpha3.Cluster{
-					TypeMeta: metav1.TypeMeta{
+				Config: &v1alpha4.Cluster{
+					TypeMeta: v1alpha4.TypeMeta{
 						Kind:       "Cluster",
-						APIVersion: "kind.sigs.k8s.io/v1alpha3",
+						APIVersion: "kind.x-k8s.io/v1alpha4",
 					},
-					Nodes: []v1alpha3.Node{
-						{Role: "control-plane"},
-						{Role: "worker"},
-						{Role: "worker"},
+					Nodes: []v1alpha4.Node{
+						{Role: v1alpha4.ControlPlaneRole},
+						{Role: v1alpha4.WorkerRole},
+						{Role: v1alpha4.WorkerRole},
 					},
 				},
 			},

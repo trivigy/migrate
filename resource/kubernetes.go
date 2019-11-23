@@ -28,7 +28,7 @@ func (r Kubernetes) NewCommand(ctx context.Context, name string) *cobra.Command 
 		Long:  "Kubernetes cluster release and deployment controller",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+			return cmd.Help()
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,

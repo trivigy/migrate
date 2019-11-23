@@ -8,6 +8,7 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
+// Database implements a test database driver.
 type Database struct {
 	Migrations *types.Migrations `json:"migrations" yaml:"migrations"`
 	Driver     interface {
@@ -17,7 +18,13 @@ type Database struct {
 	} `json:"driver" yaml:"driver"`
 }
 
-func (r Database) Build() *databaseImpl {
+// Build constructs a private implementation of the test database driver.
+func (r Database) Build() interface {
+	driver.WithCreate
+	driver.WithDestroy
+	driver.WithMigrations
+	driver.WithSource
+} {
 	return &databaseImpl{
 		migrations: r.Migrations,
 		driver:     r.Driver,

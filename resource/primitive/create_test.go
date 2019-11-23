@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/trivigy/migrate/v2/internal/testutils"
+	"github.com/trivigy/migrate/v2/testutils"
 	"github.com/trivigy/migrate/v2/types"
 )
 
@@ -43,7 +43,7 @@ func (r *CreateSuite) TestCreateCommand() {
 				"  create [flags]\n" +
 				"\n" +
 				"Flags:\n" +
-				"  -t, --try    Simulates and prints resource execution parameters.\n" +
+				"      --try    Simulates and prints resource execution parameters.\n" +
 				"      --help   Show help information.\n",
 		},
 	}

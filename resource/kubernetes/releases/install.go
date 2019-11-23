@@ -2,7 +2,6 @@ package releases
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"sort"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 	v1apps "k8s.io/api/apps/v1"
 	v1core "k8s.io/api/core/v1"
 	v1ext "k8s.io/api/extensions/v1beta1"
@@ -18,7 +18,6 @@ import (
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/yaml"
 
 	"github.com/trivigy/migrate/v2/driver"
 	"github.com/trivigy/migrate/v2/global"
@@ -64,16 +63,12 @@ func (r Install) NewCommand(ctx context.Context, name string) *cobra.Command {
 			}
 
 			if try, _ := cmd.Flags().GetBool("try"); try {
-				rbytes, err := json.Marshal(r.Driver)
+				rbytes, err := yaml.Marshal(r.Driver)
 				if err != nil {
 					return err
 				}
 
-				dump, err := yaml.JSONToYAML(rbytes)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", string(dump))
+				fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", string(rbytes))
 				return nil
 			}
 
@@ -115,8 +110,8 @@ func (r Install) NewCommand(ctx context.Context, name string) *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	flags.BoolP(
-		"try", "t", false,
+	flags.Bool(
+		"try", false,
 		"Simulates and prints resource execution parameters.",
 	)
 	flags.Bool("help", false, "Show help information.")
@@ -163,7 +158,7 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 		for _, manifest := range rel.Manifests {
 			if m, ok := manifest.(runtime.Object); ok && opts.Resource != "" {
 				resource := m.GetObjectKind().GroupVersionKind().Kind
-				if strings.ToLower(resource) != strings.ToLower(opts.Resource) {
+				if !strings.EqualFold(resource, opts.Resource) {
 					continue
 				}
 			}
@@ -182,96 +177,104 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 					}
 				}
 			case *v1core.Pod:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					Pods(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Pods(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						Pods(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						Pods(namespace).
 						Create(manifest)
 					if err != nil {
 						return err
 					}
 				}
 			case *v1core.ServiceAccount:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					ServiceAccounts(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					ServiceAccounts(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						ServiceAccounts(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						ServiceAccounts(namespace).
 						Create(manifest)
 					if err != nil {
 						return err
 					}
 				}
 			case *v1core.ConfigMap:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					ConfigMaps(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					ConfigMaps(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						ConfigMaps(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						ConfigMaps(namespace).
 						Create(manifest)
 					if err != nil {
 						return err
 					}
 				}
 			case *v1core.Endpoints:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					ConfigMaps(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Endpoints(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						Endpoints(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						Endpoints(namespace).
 						Create(manifest)
 					if err != nil {
 						return err
 					}
 				}
 			case *v1core.Service:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					Services(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Services(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						Services(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						Services(namespace).
 						Create(manifest)
 					if err != nil {
 						return err
 					}
 				}
 			case *v1core.Secret:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
-					Secrets(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Secrets(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
-						Secrets(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						Secrets(namespace).
 						Create(manifest)
 					if err != nil {
 						return err
 					}
 				}
 			case *v1rbac.Role:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.RbacV1().
-					Roles(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Roles(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.RbacV1().
-						Roles(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						Roles(namespace).
 						Create(manifest)
 					if err != nil {
 						return err
 					}
 				}
 			case *v1rbac.RoleBinding:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.RbacV1().
-					RoleBindings(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					RoleBindings(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.RbacV1().
-						RoleBindings(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						RoleBindings(namespace).
 						Create(manifest)
 					if err != nil {
 						return err
@@ -314,36 +317,39 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 					}
 				}
 			case *v1apps.DaemonSet:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.AppsV1().
-					DaemonSets(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					DaemonSets(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.AppsV1().
-						DaemonSets(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						DaemonSets(namespace).
 						Create(manifest)
 					if err != nil {
 						return err
 					}
 				}
 			case *v1apps.Deployment:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.AppsV1().
-					Deployments(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Deployments(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.AppsV1().
-						Deployments(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						Deployments(namespace).
 						Create(manifest)
 					if err != nil {
 						return err
 					}
 				}
 			case *v1ext.Ingress:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.ExtensionsV1beta1().
-					Ingresses(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+					Ingresses(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.ExtensionsV1beta1().
-						Ingresses(FallBackNS(manifest.Namespace, *r.Driver.Namespace())).
+						Ingresses(namespace).
 						Create(manifest)
 					if err != nil {
 						return err

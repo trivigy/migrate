@@ -1,6 +1,8 @@
 // Package global implements global definitions for migrate package.
 package global
 
+type key int
+
 const (
 	// Unknown defines a value used for enum equivalency checks.
 	Unknown = iota
@@ -8,10 +10,10 @@ const (
 	// UnknownStr defines a value used for returning default enum string.
 	UnknownStr = "unknown"
 
-	RefRoot = "root"
-)
+	// RefRoot defines a value to be used as a keyfor propogating root node
+	// reference across chained commands.
+	RefRoot key = iota
 
-const (
 	// DefaultEnvironment defines the name of a default environment.
 	DefaultEnvironment = "development"
 

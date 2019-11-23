@@ -10,12 +10,11 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/kind/cmd/kind"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha3"
-	logutil "sigs.k8s.io/kind/pkg/log"
-	"sigs.k8s.io/yaml"
+	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/kind/cmd/kind/app"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+	"sigs.k8s.io/kind/pkg/cmd"
+	"sigs.k8s.io/kind/pkg/log"
 
 	"github.com/trivigy/migrate/v2/driver"
 )
@@ -23,9 +22,9 @@ import (
 // Kind represents a driver for the Kubernetes IN Docker (sigs.k8s.io/kind)
 // project.
 type Kind struct {
-	Name   string      `json:"name" yaml:"name" validate:"required"`
-	Images []string    `json:"images,omitempty" yaml:"images,omitempty"`
-	Config interface{} `json:"config,omitempty" yaml:"config,omitempty"`
+	Name   string            `json:"name" yaml:"name"`
+	Images []string          `json:"images,omitempty" yaml:"images,omitempty"`
+	Config *v1alpha4.Cluster `json:"config,omitempty" yaml:"config,omitempty"`
 }
 
 var _ interface {
@@ -59,13 +58,9 @@ func (r *Kind) UnmarshalJSON(b []byte) error {
 			return err
 		}
 
-		typeMeta := metav1.TypeMeta{}
+		typeMeta := v1alpha4.TypeMeta{}
 		if r.Config != nil {
-			cfg, ok := r.Config.(*v1alpha3.Cluster)
-			if !ok {
-				return fmt.Errorf("unknown config type: %T", r.Config)
-			}
-			typeMeta = cfg.TypeMeta
+			typeMeta = r.Config.TypeMeta
 		}
 		if err := json.Unmarshal(rbytes, &typeMeta); err != nil {
 			return err
@@ -73,20 +68,20 @@ func (r *Kind) UnmarshalJSON(b []byte) error {
 
 		// decode specific (apiVersion, kind)
 		switch typeMeta.APIVersion {
-		case "kind.sigs.k8s.io/v1alpha3":
+		case "kind.x-k8s.io/v1alpha4":
 			if typeMeta.Kind != "Cluster" {
 				return fmt.Errorf("unknown kind %s for apiVersion: %s", typeMeta.APIVersion, typeMeta.Kind)
 			}
-			cfg := &v1alpha3.Cluster{}
+			cfg := &v1alpha4.Cluster{}
 			if r.Config != nil {
-				if cfg, ok = r.Config.(*v1alpha3.Cluster); !ok {
-					return fmt.Errorf("unknown config type: %T", r.Config)
-				}
+				cfg = r.Config
 			}
 			if err := json.Unmarshal(rbytes, cfg); err != nil {
 				return err
 			}
 			r.Config = cfg
+		default:
+			return fmt.Errorf("version not supported %q", typeMeta.APIVersion)
 		}
 	}
 
@@ -95,11 +90,7 @@ func (r *Kind) UnmarshalJSON(b []byte) error {
 
 // Create executes the resource creation process.
 func (r Kind) Create(ctx context.Context, out io.Writer) error {
-	args := []string{
-		"create", "cluster",
-		"--name", r.Name,
-		"--wait", "5m",
-	}
+	args := []string{"create", "cluster", "--name", r.Name, "--wait", "5m"}
 	if r.Config != nil {
 		rbytes, err := yaml.Marshal(r.Config)
 		if err != nil {
@@ -108,7 +99,7 @@ func (r Kind) Create(ctx context.Context, out io.Writer) error {
 
 		tmpfile, err := ioutil.TempFile(os.TempDir(), "kind-*.yaml")
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		defer os.Remove(tmpfile.Name())
 
@@ -128,8 +119,7 @@ func (r Kind) Create(ctx context.Context, out io.Writer) error {
 
 	for _, image := range r.Images {
 		if err := r.Execute(out, []string{
-			"load", "docker-image", image,
-			"--name", r.Name,
+			"load", "docker-image", image, "--name", r.Name,
 		}); err != nil {
 			return err
 		}
@@ -140,8 +130,7 @@ func (r Kind) Create(ctx context.Context, out io.Writer) error {
 // Destroy executes the resource destruction process.
 func (r Kind) Destroy(ctx context.Context, out io.Writer) error {
 	if err := r.Execute(out, []string{
-		"delete", "cluster",
-		"--name", r.Name,
+		"delete", "cluster", "--name", r.Name,
 	}); err != nil && !strings.HasPrefix(err.Error(), "unknown cluster") {
 		return err
 	}
@@ -150,67 +139,36 @@ func (r Kind) Destroy(ctx context.Context, out io.Writer) error {
 
 // Execute is a wrapper function to the kind command runner.
 func (r Kind) Execute(out io.Writer, args []string) error {
-	log.SetOutput(out)
-	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "15:04:05",
-		ForceColors:     logutil.IsTerminal(log.StandardLogger().Out),
-	})
-
-	old := os.Stdout
-	rd, wr, _ := os.Pipe()
-	os.Stdout = wr
-
-	outC := make(chan error)
-	go func() {
-		if _, err := io.Copy(out, rd); err != nil {
-			outC <- err
-			return
-		}
-		if err := rd.Close(); err != nil {
-			outC <- err
-			return
-		}
-		outC <- nil
-	}()
-
-	defer func() {
-		os.Stdout = old
-		if err := wr.Close(); err != nil {
-			panic(err)
-		}
-
-		err := <-outC
-		if err != nil {
-			panic(err)
-		}
-		close(outC)
-	}()
-
-	cmd := kind.NewCommand()
-	cmd.SetArgs(args)
-	if err := cmd.Execute(); err != nil {
+	logger := cmd.NewLogger()
+	setWriter(logger, out)
+	streams := cmd.IOStreams{In: os.Stdin, Out: out, ErrOut: out}
+	if err := app.Run(logger, streams, args); err != nil {
 		return err
 	}
 	return nil
+}
+
+// setWriter will call logger.SetWriter(w) if logger has a SetWriter method
+func setWriter(logger log.Logger, w io.Writer) {
+	type writerSetter interface {
+		SetWriter(io.Writer)
+	}
+	v, ok := logger.(writerSetter)
+	if ok {
+		v.SetWriter(w)
+	}
 }
 
 // Source returns the data source name for the driver.
 func (r Kind) Source(ctx context.Context, out io.Writer) error {
 	output := bytes.NewBuffer(nil)
 	if err := r.Execute(output, []string{
-		"get", "kubeconfig-path",
-		"--name", r.Name,
+		"get", "kubeconfig", "--name", r.Name,
 	}); err != nil {
 		return err
 	}
 
-	rbytes, err := ioutil.ReadFile(strings.TrimSpace(output.String()))
-	if err != nil {
-		return err
-	}
-
-	if _, err := out.Write([]byte(string(rbytes) + "\n")); err != nil {
+	if _, err := out.Write(output.Bytes()); err != nil {
 		return err
 	}
 	return nil
