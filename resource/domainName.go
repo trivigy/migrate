@@ -28,7 +28,7 @@ func (r DomainName) NewCommand(ctx context.Context, name string) *cobra.Command 
 		Long:  "Controls instance of domain name service resource",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+			return cmd.Help()
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,

@@ -52,7 +52,7 @@ var _ interface {
 // NewCommand creates a new cobra.Command, configures it and returns it.
 func (r Describe) NewCommand(ctx context.Context, name string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   name + " [NAME[:VERSION]] [RESOURCE] [FILTER]",
+		Use:   name[strings.LastIndex(name, ".")+1:] + " [NAME[:VERSION]] [RESOURCE] [FILTER]",
 		Short: "Describe registered releases with states information.",
 		Long:  "Describe registered releases with states information",
 		Args:  require.Args(r.validation),
@@ -149,7 +149,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 		for _, manifest := range rel.Manifests {
 			if m, ok := manifest.(runtime.Object); ok && opts.Resource != "" {
 				resource := m.GetObjectKind().GroupVersionKind().Kind
-				if strings.ToLower(resource) != strings.ToLower(opts.Resource) {
+				if !strings.EqualFold(resource, opts.Resource) {
 					continue
 				}
 			}
@@ -708,7 +708,6 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 		} else {
 			table.Render()
 		}
-
 	}
 
 	return nil

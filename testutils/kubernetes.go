@@ -8,6 +8,7 @@ import (
 	"github.com/trivigy/migrate/v2/types"
 )
 
+// Kubernetes implements a kubernetes test driver.
 type Kubernetes struct {
 	Namespace *string         `json:"namespace" yaml:"namespace"`
 	Releases  *types.Releases `json:"releases" yaml:"releases"`
@@ -18,7 +19,14 @@ type Kubernetes struct {
 	} `json:"driver" yaml:"driver"`
 }
 
-func (r Kubernetes) Build() *kubernetesImpl {
+// Build constructs a private implementation of the test kubernetes driver.
+func (r Kubernetes) Build() interface {
+	driver.WithCreate
+	driver.WithDestroy
+	driver.WithNamespace
+	driver.WithReleases
+	driver.WithSource
+} {
 	return &kubernetesImpl{
 		namespace: r.Namespace,
 		releases:  r.Releases,

@@ -2,13 +2,12 @@ package primitive
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
+	"gopkg.in/yaml.v3"
 
 	"github.com/trivigy/migrate/v2/driver"
 	"github.com/trivigy/migrate/v2/global"
@@ -45,17 +44,12 @@ func (r Destroy) NewCommand(ctx context.Context, name string) *cobra.Command {
 			}
 
 			if try, _ := cmd.Flags().GetBool("try"); try {
-				rbytes, err := json.Marshal(r.Driver)
+				rbytes, err := yaml.Marshal(r.Driver)
 				if err != nil {
 					return err
 				}
 
-				dump, err := yaml.JSONToYAML(rbytes)
-				if err != nil {
-					return err
-				}
-
-				fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", string(dump))
+				fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", string(rbytes))
 				return nil
 			}
 
@@ -67,8 +61,8 @@ func (r Destroy) NewCommand(ctx context.Context, name string) *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	flags.BoolP(
-		"try", "t", false,
+	flags.Bool(
+		"try", false,
 		"Simulates and prints resource execution parameters.",
 	)
 	flags.Bool("help", false, "Show help information.")

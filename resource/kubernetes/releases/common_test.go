@@ -18,7 +18,7 @@ import (
 
 	"github.com/trivigy/migrate/v2/driver"
 	"github.com/trivigy/migrate/v2/driver/docker"
-	"github.com/trivigy/migrate/v2/internal/testutils"
+	"github.com/trivigy/migrate/v2/testutils"
 	"github.com/trivigy/migrate/v2/types"
 )
 

@@ -71,8 +71,8 @@ func (r Down) NewCommand(ctx context.Context, name string) *cobra.Command {
 		"limit", "l", 1,
 		"Indicate `NUMBER` of migrations to apply. Set `0` for all.",
 	)
-	flags.BoolP(
-		"try", "t", false,
+	flags.Bool(
+		"try", false,
 		"Simulates and prints resource execution parameters.",
 	)
 	flags.Bool("help", false, "Show help information.")

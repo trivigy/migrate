@@ -18,8 +18,22 @@ type Release struct {
 	Manifests []runtime.Object `json:"manifests,omitempty" yaml:"manifests,omitempty"`
 }
 
+// String implements the Stringer interface for Release.
 func (r Release) String() string {
 	return fmt.Sprintf("%+v", []string{r.Name, r.Version.String()})
+}
+
+// MarshalYAML implements custom yaml mashal method.
+func (r Release) MarshalYAML() (interface{}, error) {
+	rbytes, err := json.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+	obj := make(map[string]interface{})
+	if err := yaml.Unmarshal(rbytes, &obj); err != nil {
+		return nil, err
+	}
+	return obj, nil
 }
 
 // UnmarshalJSON defines custom json unmarshalling procedure.

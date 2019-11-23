@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/trivigy/migrate/v2/internal/testutils"
+	"github.com/trivigy/migrate/v2/testutils"
 	"github.com/trivigy/migrate/v2/types"
 )
 
@@ -39,10 +39,11 @@ func (r *DestroySuite) TestDestroyCommand() {
 			[]string{"--help"},
 			"Stops and removes running instance of this resource\n" +
 				"\n" +
-				"Usage:\n  destroy [flags]\n" +
+				"Usage:\n" +
+				"  destroy [flags]\n" +
 				"\n" +
 				"Flags:\n" +
-				"  -t, --try    Simulates and prints resource execution parameters.\n" +
+				"      --try    Simulates and prints resource execution parameters.\n" +
 				"      --help   Show help information.\n",
 		},
 	}

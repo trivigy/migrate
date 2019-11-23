@@ -1,8 +1,8 @@
 package releases
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"sort"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 	v1apps "k8s.io/api/apps/v1"
 	v1core "k8s.io/api/core/v1"
 	v1ext "k8s.io/api/extensions/v1beta1"
@@ -18,7 +19,8 @@ import (
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/yaml"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/trivigy/migrate/v2/driver"
 	"github.com/trivigy/migrate/v2/global"
@@ -64,16 +66,12 @@ func (r Update) NewCommand(ctx context.Context, name string) *cobra.Command {
 			}
 
 			if try, _ := cmd.Flags().GetBool("try"); try {
-				rbytes, err := json.Marshal(r.Driver)
+				rbytes, err := yaml.Marshal(r.Driver)
 				if err != nil {
 					return err
 				}
 
-				dump, err := yaml.JSONToYAML(rbytes)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", string(dump))
+				fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", string(rbytes))
 				return nil
 			}
 
@@ -115,8 +113,8 @@ func (r Update) NewCommand(ctx context.Context, name string) *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	flags.BoolP(
-		"try", "t", false,
+	flags.Bool(
+		"try", false,
 		"Simulates and prints resource execution parameters.",
 	)
 	flags.Bool("help", false, "Show help information.")
@@ -151,6 +149,12 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 		return err
 	}
 
+	decoder := scheme.Codecs.UniversalDeserializer()
+	encoder := json.NewSerializerWithOptions(
+		json.DefaultMetaFactory, nil, nil,
+		json.SerializerOptions{Yaml: true, Strict: true},
+	)
+
 	sort.Sort(*r.Driver.Releases())
 	for _, rel := range *r.Driver.Releases() {
 		if opts.Name != "" && rel.Name != opts.Name ||
@@ -162,14 +166,14 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 		for _, manifest := range rel.Manifests {
 			if m, ok := manifest.(runtime.Object); ok && opts.Resource != "" {
 				resource := m.GetObjectKind().GroupVersionKind().Kind
-				if strings.ToLower(resource) != strings.ToLower(opts.Resource) {
+				if !strings.EqualFold(resource, opts.Resource) {
 					continue
 				}
 			}
 
 			switch manifest := manifest.(type) {
 			case *v1core.Namespace:
-				_, err := kubectl.CoreV1().
+				instance, err := kubectl.CoreV1().
 					Namespaces().
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -178,15 +182,24 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.CoreV1().
 					Namespaces().
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1core.Pod:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.CoreV1().
+				instance, err := kubectl.CoreV1().
 					Pods(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -195,15 +208,24 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.CoreV1().
 					Pods(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1core.ServiceAccount:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.CoreV1().
+				instance, err := kubectl.CoreV1().
 					ServiceAccounts(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -212,15 +234,24 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.CoreV1().
 					ServiceAccounts(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1core.ConfigMap:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.CoreV1().
+				instance, err := kubectl.CoreV1().
 					ConfigMaps(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -229,32 +260,50 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.CoreV1().
 					ConfigMaps(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1core.Endpoints:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.CoreV1().
-					ConfigMaps(namespace).
+				instance, err := kubectl.CoreV1().
+					Endpoints(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
+					return err
+				}
+
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
 					return err
 				}
 
 				_, err = kubectl.CoreV1().
 					Endpoints(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1core.Service:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.CoreV1().
+				instance, err := kubectl.CoreV1().
 					Services(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -263,32 +312,50 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.CoreV1().
 					Services(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1core.Secret:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.CoreV1().
+				instance, err := kubectl.CoreV1().
 					Secrets(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
+					return err
+				}
+
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
 					return err
 				}
 
 				_, err = kubectl.CoreV1().
 					Secrets(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1rbac.Role:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.RbacV1().
+				instance, err := kubectl.RbacV1().
 					Roles(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -297,15 +364,24 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.RbacV1().
 					Roles(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1rbac.RoleBinding:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.RbacV1().
+				instance, err := kubectl.RbacV1().
 					RoleBindings(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -314,14 +390,23 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.RbacV1().
 					RoleBindings(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1rbac.ClusterRole:
-				_, err := kubectl.RbacV1().
+				instance, err := kubectl.RbacV1().
 					ClusterRoles().
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -330,14 +415,23 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.RbacV1().
 					ClusterRoles().
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1rbac.ClusterRoleBinding:
-				_, err := kubectl.RbacV1().
+				instance, err := kubectl.RbacV1().
 					ClusterRoleBindings().
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -346,31 +440,49 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.RbacV1().
 					ClusterRoleBindings().
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1policy.PodSecurityPolicy:
-				_, err := kubectl.PolicyV1beta1().
+				instance, err := kubectl.PolicyV1beta1().
 					PodSecurityPolicies().
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
+					return err
+				}
+
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
 					return err
 				}
 
 				_, err = kubectl.PolicyV1beta1().
 					PodSecurityPolicies().
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1apps.DaemonSet:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.AppsV1().
+				instance, err := kubectl.AppsV1().
 					DaemonSets(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -379,32 +491,50 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.AppsV1().
 					DaemonSets(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1apps.Deployment:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.AppsV1().
+				instance, err := kubectl.AppsV1().
 					Deployments(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
+					return err
+				}
+
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
 					return err
 				}
 
 				_, err = kubectl.AppsV1().
 					Deployments(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}
 			case *v1ext.Ingress:
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
-				_, err := kubectl.ExtensionsV1beta1().
+				instance, err := kubectl.ExtensionsV1beta1().
 					Ingresses(namespace).
 					Get(manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
@@ -413,9 +543,18 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 					return err
 				}
 
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
 				_, err = kubectl.ExtensionsV1beta1().
 					Ingresses(namespace).
-					Update(manifest)
+					Update(instance)
 				if err != nil {
 					return err
 				}

@@ -1,3 +1,4 @@
+// Package driver implements driver capability interfaces and drivers for local development.
 package driver
 
 import (
@@ -5,7 +6,7 @@ import (
 	"io"
 )
 
-// WithCreate represents the creation method interface for drivers.
+// WithCreate represents the creation method interface for a driver.
 type WithCreate interface {
 	Create(ctx context.Context, out io.Writer) error
 }

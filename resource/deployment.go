@@ -28,7 +28,7 @@ func (r Deployment) NewCommand(ctx context.Context, name string) *cobra.Command 
 		Long:  "Infrastructure setup/teardown management commands",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+			return cmd.Help()
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,

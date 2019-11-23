@@ -2,7 +2,6 @@ package releases
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"sort"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 	v1apps "k8s.io/api/apps/v1"
 	v1core "k8s.io/api/core/v1"
 	v1ext "k8s.io/api/extensions/v1beta1"
@@ -18,7 +18,6 @@ import (
 	v1err "k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/yaml"
 
 	"github.com/trivigy/migrate/v2/driver"
 	"github.com/trivigy/migrate/v2/global"
@@ -64,16 +63,12 @@ func (r Uninstall) NewCommand(ctx context.Context, name string) *cobra.Command {
 			}
 
 			if try, _ := cmd.Flags().GetBool("try"); try {
-				rbytes, err := json.Marshal(r.Driver)
+				rbytes, err := yaml.Marshal(r.Driver)
 				if err != nil {
 					return err
 				}
 
-				dump, err := yaml.JSONToYAML(rbytes)
-				if err != nil {
-					return err
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", string(dump))
+				fmt.Fprintf(cmd.OutOrStdout(), "%+v\n", string(rbytes))
 				return nil
 			}
 
@@ -115,8 +110,8 @@ func (r Uninstall) NewCommand(ctx context.Context, name string) *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.SortFlags = false
-	flags.BoolP(
-		"try", "t", false,
+	flags.Bool(
+		"try", false,
 		"Simulates and prints resource execution parameters.",
 	)
 	flags.Bool("help", false, "Show help information.")
@@ -163,7 +158,7 @@ func (r Uninstall) run(ctx context.Context, out io.Writer, opts uninstallOptions
 		for _, manifest := range rel.Manifests {
 			if m, ok := manifest.(runtime.Object); ok && opts.Resource != "" {
 				resource := m.GetObjectKind().GroupVersionKind().Kind
-				if strings.ToLower(resource) != strings.ToLower(opts.Resource) {
+				if !strings.EqualFold(resource, opts.Resource) {
 					continue
 				}
 			}

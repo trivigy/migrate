@@ -29,7 +29,7 @@ func (r Releases) NewCommand(ctx context.Context, name string) *cobra.Command {
 		Long:  "Manages the lifecycle of a kubernetes release",
 		Args:  require.Args(r.validation),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+			return cmd.Help()
 		},
 		SilenceErrors: true,
 		SilenceUsage:  true,

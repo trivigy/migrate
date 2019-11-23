@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/trivigy/migrate/v2/internal/testutils"
 	"github.com/trivigy/migrate/v2/resource/primitive"
+	"github.com/trivigy/migrate/v2/testutils"
 	"github.com/trivigy/migrate/v2/types"
 )
 
