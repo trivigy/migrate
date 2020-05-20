@@ -12,6 +12,9 @@ library and optimized on a whole lot of stuff inside. I am using this project to
 back a few other major developments I am working on and will keep updating things 
 as needed. If you do find bugs please feel free to submit a pull request.
 
+## Notice
+> Version 2.0 is quiet different from the original fork and is the one I use in production for projects I support. It comes with kubernetes releases as migrations. Think helm but in pure golang in-code manifests. This doc below doesn't reflect those changes almost at all. Feel free to explore the code under the different tag and ask questions. Whenever I get some time I will update this doc and create an example illustrating how all that works.
+
 ## Features
 * Usable as an embedded CLI tool
 * Supports SQLite, PostgreSQL, MySQL, MSSQL (through [gorp](https://github.com/go-gorp/gorp))
