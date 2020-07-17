@@ -42,11 +42,11 @@ func GetK8sClientset(ctx context.Context, driver driver.WithSource, namespace st
 
 	_, err = kubectl.CoreV1().
 		Namespaces().
-		Get(namespace, v1meta.GetOptions{})
+		Get(ctx, namespace, v1meta.GetOptions{})
 	if v1err.IsNotFound(err) {
 		_, err := kubectl.CoreV1().
 			Namespaces().
-			Create(&v1core.Namespace{
+			Create(ctx, &v1core.Namespace{
 				TypeMeta: v1meta.TypeMeta{
 					APIVersion: "v1",
 					Kind:       "Namespace",
@@ -54,7 +54,7 @@ func GetK8sClientset(ctx context.Context, driver driver.WithSource, namespace st
 				ObjectMeta: v1meta.ObjectMeta{
 					Name: namespace,
 				},
-			})
+			}, v1meta.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}

@@ -62,10 +62,11 @@ func (r *MigrationsSuite) SetupSuite() {
 			},
 		},
 		Driver: &docker.Postgres{
-			Name:    strings.ToLower(randomdata.SillyName()),
-			Version: "9.6",
-			DBName:  "unittest",
-			User:    "postgres",
+			Name:     strings.ToLower(randomdata.SillyName()),
+			Version:  "9.6",
+			DBName:   "unittest",
+			User:     "postgres",
+			Password: "postgres",
 		},
 	}.Build()
 

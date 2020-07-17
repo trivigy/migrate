@@ -37,7 +37,6 @@ func (r *ReleasesSuite) TestUpgradeCommand() {
 			}
 
 			if tc.output != tc.buffer.String() {
-				fmt.Printf("%q\n", tc.buffer.String())
 				panic(tc.buffer.String())
 			}
 		}

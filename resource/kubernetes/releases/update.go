@@ -175,7 +175,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 			case *v1core.Namespace:
 				instance, err := kubectl.CoreV1().
 					Namespaces().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -193,7 +193,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.CoreV1().
 					Namespaces().
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -201,7 +201,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.CoreV1().
 					Pods(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -219,7 +219,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.CoreV1().
 					Pods(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -227,7 +227,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.CoreV1().
 					ServiceAccounts(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -245,7 +245,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.CoreV1().
 					ServiceAccounts(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -253,7 +253,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.CoreV1().
 					ConfigMaps(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -271,7 +271,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.CoreV1().
 					ConfigMaps(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -279,7 +279,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.CoreV1().
 					Endpoints(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -297,7 +297,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.CoreV1().
 					Endpoints(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -305,7 +305,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.CoreV1().
 					Services(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -323,7 +323,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.CoreV1().
 					Services(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -331,7 +331,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.CoreV1().
 					Secrets(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -349,7 +349,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.CoreV1().
 					Secrets(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -357,7 +357,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.RbacV1().
 					Roles(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -375,7 +375,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.RbacV1().
 					Roles(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -383,7 +383,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.RbacV1().
 					RoleBindings(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -401,14 +401,14 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.RbacV1().
 					RoleBindings(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
 			case *v1rbac.ClusterRole:
 				instance, err := kubectl.RbacV1().
 					ClusterRoles().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -426,14 +426,14 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.RbacV1().
 					ClusterRoles().
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
 			case *v1rbac.ClusterRoleBinding:
 				instance, err := kubectl.RbacV1().
 					ClusterRoleBindings().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -451,14 +451,14 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.RbacV1().
 					ClusterRoleBindings().
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
 			case *v1policy.PodSecurityPolicy:
 				instance, err := kubectl.PolicyV1beta1().
 					PodSecurityPolicies().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -476,7 +476,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.PolicyV1beta1().
 					PodSecurityPolicies().
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -484,7 +484,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.AppsV1().
 					DaemonSets(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -502,7 +502,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.AppsV1().
 					DaemonSets(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -510,7 +510,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.AppsV1().
 					Deployments(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -528,7 +528,33 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.AppsV1().
 					Deployments(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
+				if err != nil {
+					return err
+				}
+			case *v1apps.StatefulSet:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
+				instance, err := kubectl.AppsV1().
+					StatefulSets(namespace).
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					continue
+				} else if err != nil {
+					return err
+				}
+
+				buffer := bytes.NewBuffer(nil)
+				if err := encoder.Encode(manifest, buffer); err != nil {
+					return err
+				}
+				_, _, err = decoder.Decode(buffer.Bytes(), nil, instance)
+				if err != nil {
+					return err
+				}
+
+				_, err = kubectl.AppsV1().
+					StatefulSets(namespace).
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}
@@ -536,7 +562,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				instance, err := kubectl.ExtensionsV1beta1().
 					Ingresses(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					continue
 				} else if err != nil {
@@ -554,7 +580,7 @@ func (r Update) run(ctx context.Context, out io.Writer, opts updateOptions) erro
 
 				_, err = kubectl.ExtensionsV1beta1().
 					Ingresses(namespace).
-					Update(instance)
+					Update(ctx, instance, v1meta.UpdateOptions{})
 				if err != nil {
 					return err
 				}

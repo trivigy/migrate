@@ -31,7 +31,7 @@ func (r SQL) Create(ctx context.Context, out io.Writer) error {
 	}
 
 	var cancel context.CancelFunc
-	ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 	if err := retry.Do(ctx, 2*time.Second, func() (bool, error) {
 		err := db.Ping()

@@ -143,10 +143,10 @@ func (r Postgres) Create(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	if err := retry.Do(ctx, 1*time.Second, func() (bool, error) {
+	if err := retry.Do(ctx, 2*time.Second, func() (bool, error) {
 		err := db.Ping()
 		if err == nil {
 			return false, nil

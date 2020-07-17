@@ -165,7 +165,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 
 				result, err := kubectl.CoreV1().
 					Namespaces().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", manifest.Name, ""})
 					break
@@ -192,7 +192,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.CoreV1().
 					Pods(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break
@@ -231,7 +231,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.CoreV1().
 					ServiceAccounts(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break
@@ -259,7 +259,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.CoreV1().
 					ConfigMaps(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break
@@ -295,7 +295,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.CoreV1().
 					Endpoints(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break
@@ -335,7 +335,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.CoreV1().
 					Services(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break
@@ -381,7 +381,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.CoreV1().
 					Secrets(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break
@@ -418,7 +418,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.RbacV1().
 					Roles(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break
@@ -445,7 +445,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.RbacV1().
 					RoleBindings(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break
@@ -471,7 +471,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 
 				result, err := kubectl.RbacV1().
 					ClusterRoles().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", manifest.Name, ""})
 					break
@@ -496,7 +496,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 
 				result, err := kubectl.RbacV1().
 					ClusterRoleBindings().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", manifest.Name, ""})
 					break
@@ -521,7 +521,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 
 				result, err := kubectl.PolicyV1beta1().
 					PodSecurityPolicies().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", manifest.Name, ""})
 					break
@@ -560,7 +560,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.AppsV1().
 					DaemonSets(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break
@@ -585,14 +585,14 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				tbl, ok := tables[manifest.Kind]
 				if !ok {
 					tbl = NewEmbeddedTable()
-					tbl.Table.SetHeader([]string{"", "NAMESPACE", "NAME", "READY", "UP-TO-DATE", "AVAILABLE", "AGE"})
+					tbl.Table.SetHeader([]string{"", "NAMESPACE", "NAME", "READY", "STATUS", "RESTARTS", "AGE"})
 					tables[manifest.Kind] = tbl
 				}
 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.AppsV1().
 					Deployments(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break
@@ -611,6 +611,35 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 					fmt.Sprintf("%d", result.Status.AvailableReplicas),
 					fmt.Sprintf("%.2fm", diffTime.Minutes()),
 				})
+			case *v1apps.StatefulSet:
+				tbl, ok := tables[manifest.Kind]
+				if !ok {
+					tbl = NewEmbeddedTable()
+					tbl.Table.SetHeader([]string{"", "NAMESPACE", "NAME", "DESIRED", "CURRENT", "AGE"})
+					tables[manifest.Kind] = tbl
+				}
+
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
+				result, err := kubectl.AppsV1().
+					StatefulSets(namespace).
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
+					break
+				} else if err != nil {
+					return err
+				}
+				tbl.Results = append(tbl.Results, result)
+
+				diffTime := time.Since(result.ObjectMeta.CreationTimestamp.Time)
+				tbl.Table.Append([]string{
+					"✓",
+					result.ObjectMeta.Namespace,
+					result.ObjectMeta.Name,
+					fmt.Sprintf("%d", result.Status.Replicas),
+					fmt.Sprintf("%d", result.Status.ReadyReplicas),
+					fmt.Sprintf("%.2fm", diffTime.Minutes()),
+				})
 			case *v1ext.Ingress:
 				tbl, ok := tables[manifest.Kind]
 				if !ok {
@@ -622,7 +651,7 @@ func (r Describe) run(ctx context.Context, out io.Writer, opts describeOptions) 
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				result, err := kubectl.ExtensionsV1beta1().
 					Ingresses(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					tbl.Table.Append([]string{"✗", namespace, manifest.Name, ""})
 					break

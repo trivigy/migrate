@@ -167,11 +167,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 			case *v1core.Namespace:
 				_, err := kubectl.CoreV1().
 					Namespaces().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
 						Namespaces().
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -180,11 +180,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
 					Pods(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
 						Pods(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -193,11 +193,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
 					ServiceAccounts(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
 						ServiceAccounts(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -206,11 +206,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
 					ConfigMaps(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
 						ConfigMaps(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -219,11 +219,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
 					Endpoints(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
 						Endpoints(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -232,11 +232,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
 					Services(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
 						Services(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -245,11 +245,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.CoreV1().
 					Secrets(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.CoreV1().
 						Secrets(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -258,11 +258,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.RbacV1().
 					Roles(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.RbacV1().
 						Roles(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -271,11 +271,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.RbacV1().
 					RoleBindings(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.RbacV1().
 						RoleBindings(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -283,11 +283,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 			case *v1rbac.ClusterRole:
 				_, err := kubectl.RbacV1().
 					ClusterRoles().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.RbacV1().
 						ClusterRoles().
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -295,11 +295,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 			case *v1rbac.ClusterRoleBinding:
 				_, err := kubectl.RbacV1().
 					ClusterRoleBindings().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.RbacV1().
 						ClusterRoleBindings().
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -307,11 +307,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 			case *v1policy.PodSecurityPolicy:
 				_, err := kubectl.PolicyV1beta1().
 					PodSecurityPolicies().
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.PolicyV1beta1().
 						PodSecurityPolicies().
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -320,11 +320,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.AppsV1().
 					DaemonSets(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.AppsV1().
 						DaemonSets(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -333,11 +333,24 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.AppsV1().
 					Deployments(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.AppsV1().
 						Deployments(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
+					if err != nil {
+						return err
+					}
+				}
+			case *v1apps.StatefulSet:
+				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
+				_, err := kubectl.AppsV1().
+					Deployments(namespace).
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
+				if v1err.IsNotFound(err) {
+					_, err := kubectl.AppsV1().
+						StatefulSets(namespace).
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
@@ -346,11 +359,11 @@ func (r Install) run(ctx context.Context, out io.Writer, opts installOptions) er
 				namespace := FallBackNS(manifest.Namespace, *r.Driver.Namespace())
 				_, err := kubectl.ExtensionsV1beta1().
 					Ingresses(namespace).
-					Get(manifest.Name, v1meta.GetOptions{})
+					Get(ctx, manifest.Name, v1meta.GetOptions{})
 				if v1err.IsNotFound(err) {
 					_, err := kubectl.ExtensionsV1beta1().
 						Ingresses(namespace).
-						Create(manifest)
+						Create(ctx, manifest, v1meta.CreateOptions{})
 					if err != nil {
 						return err
 					}
