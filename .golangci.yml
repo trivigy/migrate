@@ -25,6 +25,7 @@ linters:
     - dogsled
     - wsl
     - unparam
+    - gomnd
 
 issues:
   exclude-use-default: false

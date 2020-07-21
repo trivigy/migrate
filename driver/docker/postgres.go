@@ -34,6 +34,7 @@ type Postgres struct {
 	InitDBArgs   string `json:"initDBArgs,omitempty" yaml:"initDBArgs,omitempty"`
 	InitDBWalDir string `json:"initDBWalDir,omitempty" yaml:"initDBWalDir,omitempty"`
 	PGData       string `json:"pgData,omitempty" yaml:"pgData,omitempty"`
+	Network      string `json:"network,omitempty" yaml:"network,omitempty"`
 }
 
 var _ interface {
@@ -112,6 +113,22 @@ func (r Postgres) Create(ctx context.Context, out io.Writer) error {
 		AutoRemove: true,
 	}
 	networkCfg := &network.NetworkingConfig{}
+	if r.Network != "" {
+		_, err := docker.NetworkInspect(ctx, r.Network, dtypes.NetworkInspectOptions{})
+		if err != nil {
+			switch {
+			case client.IsErrNotFound(err):
+				_, err = docker.NetworkCreate(ctx, r.Network, dtypes.NetworkCreate{Driver: "bridge"})
+				if err != nil {
+					return err
+				}
+			default:
+				return err
+			}
+		}
+		networkCfg.EndpointsConfig = map[string]*network.EndpointSettings{r.Network: {}}
+	}
+
 	resp, err := docker.ContainerCreate(ctx, createCfg, hostCfg, networkCfg, r.Name)
 	if err != nil {
 		return err
@@ -127,7 +144,13 @@ func (r Postgres) Create(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	address := info.NetworkSettings.IPAddress
+	var address string
+	if r.Network != "" {
+		address = info.NetworkSettings.Networks[r.Network].IPAddress
+	} else {
+		address = info.NetworkSettings.IPAddress
+	}
+
 	url := types.PsqlDSN{Host: address}
 	if r.User != "" {
 		url.User = r.User
@@ -232,7 +255,13 @@ func (r Postgres) Source(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	address := info.NetworkSettings.IPAddress
+	var address string
+	if r.Network != "" {
+		address = info.NetworkSettings.Networks[r.Network].IPAddress
+	} else {
+		address = info.NetworkSettings.IPAddress
+	}
+
 	url := types.PsqlDSN{Host: address}
 	if r.Password != "" {
 		url.Password = r.Password
