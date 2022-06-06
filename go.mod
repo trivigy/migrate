@@ -3,6 +3,8 @@ module github.com/trivigy/migrate/v2
 go 1.13
 
 require (
+	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
+	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containerd/containerd v1.3.6 // indirect
@@ -23,11 +25,12 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.4.0
-	github.com/tidwall/gjson v1.3.2
-	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
+	github.com/tidwall/gjson v1.9.3
+	github.com/ziutek/mymysql v1.5.4 // indirect
 	google.golang.org/api v0.29.0
 	gopkg.in/gorp.v1 v1.7.2
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
+	gotest.tools v2.2.0+incompatible // indirect
 	k8s.io/api v0.18.6
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v0.18.6
